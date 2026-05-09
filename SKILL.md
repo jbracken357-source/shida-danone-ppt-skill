@@ -1,14 +1,14 @@
 ---
 name: shida-danone-ppt-skill
-description: 生成达能企业风格 HTML 幻灯片 deck，完整走通需求澄清→叙事弧→架构选择→Junior/Full pass→交付（浏览器/PDF/可编辑PPTX/图片铺底PPTX）。设计系统来自 danone.com 官网验证。触发词：达能风格 PPT、Danone slide deck、达能官网风格汇报、达能设计系统幻灯片、达能风格 deck、Danone presentation、Danone report deck、ESG 报告 PPT、产品发布 deck。
-version: 2.0.0
+description: Use when creating Danone-inspired corporate presentation decks, ESG reports, product launch decks, Danone-style HTML slides, PDF exports, image PPTX exports, or editable PPTX exports.
+version: 2.1.0
 author: Shida Fu
 tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf]
 ---
 
 # Shida Danone PPT Skill
 
-> TL;DR：达能官网(light-first)风格幻灯片。走需求澄清→叙事弧→多文件架构→Junior pass(确认)→Full pass→交付。要可编辑PPTX就从第一行遵守4条硬约束。
+> TL;DR：达能官网(light-first)风格幻灯片。走需求澄清→叙事弧→多文件架构→Junior pass(确认)→Full pass→交付。要可编辑PPTX就从第一行遵守4条硬约束；默认交付**纯 editable**，不要在 editable 上再铺截图覆盖层。
 
 ## Danone 品牌资产协议（动手前必做）
 
@@ -18,6 +18,7 @@ tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf]
 - 从 danone.com 首页或 /brand 页面提取 inline SVG 或 PNG
 - 保存为 `assets/danone-logo.svg`
 - 至少准备两个版本：深底白色版 + 浅底蓝色版
+- **必须验证文件真的是图片/SVG**：PNG 文件头应为 `89 50 4E 47`，SVG 应包含 `<svg`。如果 `.png` 实际是 HTML（常见于下载失败/权限页），不要使用，改用文字品牌占位并向用户说明。
 
 ### Step B · 采集官方产品图/摄影
 - 从 danone.com 产品页或 press kit 下载高清产品图
@@ -115,6 +116,13 @@ Max 1280px / Content 1120px / Padding 80px / Section vertical 80-96px
 2. 所有文字在 `<p>` 或 `<h1>`-`<h6>` 里（禁止 div/span 直接承载主文字）
 3. `<p>`/`<h*>` 无 background/border/shadow（放外层 div）
 4. 无 CSS 渐变，div 无 background-image（用 `<img>` 标签）
+
+#### PPTX 可编辑默认策略
+
+- 默认生成**纯 editable PPTX**：`--mode editable`，文字和形状可直接编辑。
+- 不要默认在 editable 上铺一层全页截图。这样虽然视觉完全保真，但会挡住底层可编辑对象，用户编辑体验差。
+- 只有当用户明确要求“打开效果必须和 PDF 逐像素一致，编辑性次要”时，才做“底层 editable + 顶层截图”的 hybrid 方案，并明确告知编辑前要移开/删除顶层截图。
+- editable 与 PDF 允许有轻微字体度量、圆角、边框渲染差异；只要整体布局、层级、颜色和可读性一致，优先保留纯 editable。
 
 🛑 **检查点 1**：确认交付格式后再进 Step 1。
 
@@ -227,13 +235,15 @@ npm install playwright pdf-lib pptxgenjs sharp
 
 #### 视觉验证（可选但推荐）
 
-在正式导出前，用 `scripts/verify.py` 对 index.html 做逐页截图验证，确认布局不溢出、字体加载正常：
+在正式导出前，用 `scripts/verify.py` 对 index.html 做逐页截图验证，确认翻页、字体加载和控制台状态：
 
 ```bash
 python scripts/verify.py index.html --slides 10 --output ./screenshots/
 ```
 
 截图会输出到 `screenshots/` 目录，文件名 `index-slide-01.png` ~ `index-slide-10.png`。肉眼确认后再跑导出。
+
+**注意**：`index.html` 截图会包含外层舞台/counter，适合验证翻页链路，不适合最终视觉验收。最终视觉验收应直接打开 `slides/*.html` 截图，或把 PDF/PPTX 导出后再渲染成图片对比。
 
 #### Playwright Chromium 通道适配
 
@@ -245,11 +255,13 @@ WSL/Ubuntu 环境下 `npx playwright install` 常因 headless-shell 下载超时
 
 | 目标 | 命令 | 成功标志 |
 |------|------|---------|
-| PDF | `node scripts/export_deck_pdf.mjs --slides slides/ --out deck.pdf --width 1920 --height 1080` | 输出 `✓ Wrote ...pdf (X KB, N pages, vector)` |
-| PPTX 图片铺底 | `node scripts/export_deck_pptx.mjs --slides slides/ --out deck-image.pptx --mode image` | 输出 `✓ Wrote ...pptx (N slides, image mode)` |
+| PDF | `node scripts/export_deck_pdf.mjs --slides slides/ --out deck.pdf --width 1280 --height 720` | 输出 `✓ Wrote ...pdf (X KB, N pages, vector)` |
+| PPTX 图片铺底 | `node scripts/export_deck_pptx.mjs --slides slides/ --out deck-image.pptx --mode image --width 1280 --height 720` | 输出 `✓ Wrote ...pptx (N slides, image mode)` |
 | PPTX 可编辑 | `node scripts/export_deck_pptx.mjs --slides slides/ --out deck-editable.pptx --mode editable` | 输出 `✓ Wrote ...pptx (N/N slides, editable mode)` |
 
 **默认三种产物全部导出**：`deck.pdf` + `deck-image.pptx` + `deck-editable.pptx`。如果用户只要其中一种或两种，按需运行。
+
+**重要**：当 HTML 使用 `body.pptx-canvas { width:1280px; height:720px; }` 时，PDF 和 image PPTX 也默认用 `--width 1280 --height 720`，这样三种产物尺寸一致。只有用户明确要求高清 PDF 时才生成额外 1920×1080 版本。
 
 **⚠️ PPTX 可编辑模式前置检查（导出前必须过）**：
 
@@ -286,6 +298,9 @@ grep -rP 'width:\s*\d+pt' slides/                   # 有输出 = 用了 pt 单�
 |------|------|
 | Playwright headless-shell 下载超时 | 改 `chromium.launch({ channel: 'chromium' })`，用系统 chromium-browser |
 | PPTX editable 全部失败 | 回退到 image mode（图片铺底），告知用户文字不可编辑但视觉 100% 保真 |
+| PPTX image 导出后内容缩在左上角 | 脚本必须用显式 `slideW = width / 96`、`slideH = height / 96` 铺图，不能依赖 `pres.width/pres.height` |
+| 项目 `package.json` 有 `"type":"module"` 导致 `html2pptx.js` require 失败 | 当前脚本会自动复制临时 `.cjs` 再加载；如果旧脚本失败，删除 `"type":"module"` 或把 `html2pptx.js` 改为 `.cjs` |
+| editable 与 PDF 有轻微字体/圆角差异 | 接受纯 editable；不要为了像素一致默认加截图覆盖层 |
 | PDF 导出后字体显示为方块 | Google Fonts 未加载，检查网络或改用系统字体 fallback |
 | 用户拒绝回答问题清单 | 按 best judgment 做 1 个主方案，交付时标注 assumption |
 | 导出脚本异常 | 降级方案：`npm install playwright pdf-lib pptxgenjs sharp` 后自写导出脚本（playwright 截图 + pdf-lib 合并） |
@@ -328,8 +343,11 @@ grep -rP 'width:\s*\d+pt' slides/                   # 有输出 = 用了 pt 单�
 - [ ] Bullet 蓝色圆点 `#005EB8`
 - [ ] → 键翻页无空白/错位
 - [ ] PPTX 可编辑：body `1280px×720px`（不是 960pt×540pt），文字全在 `<p>`/`<h*>` 里
+- [ ] PPTX 图片铺底：导出后打开/渲染检查，截图必须铺满整页，不能缩在左上角
+- [ ] PPTX 可编辑：优先纯 editable，无顶层全页截图覆盖
 - [ ] 无 TODO / placeholder 残留
 - [ ] **Playwright 截图验证**：导出前用 Playwright 截取关键页面（封面、摘要页、数据页、收束页），肉眼确认布局不溢出、字体加载正常
+- [ ] **交付物对比验证**：至少抽查 PDF、image PPTX、editable PPTX 各 2-3 页，确认展示效果一致
 
 ## 反模式
 
@@ -343,6 +361,7 @@ grep -rP 'width:\s*\d+pt' slides/                   # 有输出 = 用了 pt 单�
   - ❌ 手动 bullet 符号 `•` `●` `✓`（用 `<ul><li>` 列表代替）
   - ❌ `<p>`/`<h*>` 上带 background/border/box-shadow 样式
   - ❌ 用 `• 文本<br>• 文本` 做多行列表（用 `<ul><li>` 代替）
+  - ❌ 为了视觉保真，在 editable 顶层默认铺全页截图（这会挡住可编辑内容）
 
 ## PPTX editable 模式额外陷阱（html2pptx.js 特定）
 
@@ -374,3 +393,9 @@ Step 0 确认"都需要"时，按 **PPTX 可编辑** 约束写 HTML：
 **如果用户明确要高清 PDF（1920px）**：需要生成两套 HTML——一套 `slide-canvas`（1920×1080）用于 PDF/image 导出，一套 `pptx-canvas`（1280×720）用于 editable PPTX。**默认只生成一套 pptx-canvas**，除非用户明确要求高清 PDF。
 
 **经验教训**：导出前先跑 `node export_deck_pptx.mjs --mode editable` 试一次——比 grep 检查更准。失败了就根据错误信息逐页修，修完重跑。
+
+#### 交付物视觉对齐经验（2026-05-09 实测）
+
+- `deck-image.pptx` 应与 PDF 展示一致；如果不一致，优先怀疑图片铺底尺寸，而不是 HTML。
+- `deck-editable.pptx` 原生对象和 PDF 可能有轻微差异，主要来自 PowerPoint/LibreOffice 字体度量、圆角和边框渲染；只要用户接受，应保留纯 editable。
+- 如需量化对比，可把 PPTX 用 LibreOffice 转 PDF，再用 PyMuPDF 渲染成 PNG，与 `deck.pdf` 渲染图做抽查。平均像素差在低个位数通常是抗锯齿级差异。

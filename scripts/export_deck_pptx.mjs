@@ -45,6 +45,26 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+async function loadHtml2Pptx() {
+  const { createRequire } = await import('module');
+  const require = createRequire(import.meta.url);
+  const source = path.join(__dirname, 'html2pptx.js');
+  try {
+    return require(source);
+  } catch (e) {
+    // If the deck project has package.json { "type": "module" }, copied .js files
+    // are treated as ESM and CommonJS require() fails. Load an identical .cjs copy.
+    if (!String(e.message || '').includes('ES module')) throw e;
+    const cjsPath = path.join(__dirname, `.html2pptx-${Date.now()}.cjs`);
+    await fs.copyFile(source, cjsPath);
+    try {
+      return require(cjsPath);
+    } finally {
+      await fs.unlink(cjsPath).catch(() => {});
+    }
+  }
+}
+
 function parseArgs() {
   const args = { width: 1920, height: 1080, mode: 'image' };
   const a = process.argv.slice(2);
@@ -86,11 +106,13 @@ async function exportImage({ slidesDir, outFile, files, width, height }) {
   await browser.close();
 
   const pres = new pptxgen();
-  pres.defineLayout({ name: 'DECK', width: width / 96, height: height / 96 });
+  const slideW = width / 96;
+  const slideH = height / 96;
+  pres.defineLayout({ name: 'DECK', width: slideW, height: slideH });
   pres.layout = 'DECK';
   for (const png of pngs) {
     const s = pres.addSlide();
-    s.addImage({ path: png, x: 0, y: 0, w: pres.width, h: pres.height });
+    s.addImage({ path: png, x: 0, y: 0, w: slideW, h: slideH });
   }
   await pres.writeFile({ fileName: outFile });
 
@@ -103,12 +125,9 @@ async function exportImage({ slidesDir, outFile, files, width, height }) {
 async function exportEditable({ slidesDir, outFile, files }) {
   console.log(`[editable mode] Converting ${files.length} slides via html2pptx...`);
 
-  // 动态 require html2pptx.js（CommonJS 模块）
-  const { createRequire } = await import('module');
-  const require = createRequire(import.meta.url);
   let html2pptx;
   try {
-    html2pptx = require(path.join(__dirname, 'html2pptx.js'));
+    html2pptx = await loadHtml2Pptx();
   } catch (e) {
     console.error(`✗ 加载 html2pptx.js 失败：${e.message}`);
     console.error(`  该模块依赖 sharp —— 请跑 npm install sharp 后重试。`);
