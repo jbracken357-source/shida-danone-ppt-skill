@@ -1,0 +1,52 @@
+{
+  "slides": [
+    {
+      "intent": "opening-cover",
+      "content": {
+        "title": "Danone presentation factory pilot",
+        "subtitle_or_date": "Audience: Danone China regional leadership and marketing operations."
+      }
+    },
+    {
+      "intent": "big-message",
+      "content": {
+        "headline": "explain how a blue-white Danone presentation factory can turn rough strategy notes into editable corporate decks.",
+        "supporting_text": "Audience: Danone China regional leadership and marketing operations.\nGoal: explain how a blue-white Danone presentation factory can turn rough strategy notes into editable corporate decks.\nKey points: protect template consistency\nkeep PowerPoint text editable"
+      }
+    },
+    {
+      "intent": "two-column",
+      "content": {
+        "title": "Situation and implication",
+        "left_content": "Audience: Danone China regional leadership and marketing operations.\nGoal: explain how a blue-white Danone presentation factory can turn rough strategy notes into editable corporate decks.\nKey points: protect template consistency\nkeep PowerPoint text editable",
+        "right_content": "Metrics: 40% faster first draft cycle\n3 quality gates\n8 pilot teams\n60-day rollout."
+      }
+    },
+    {
+      "intent": "chart-or-table",
+      "content": {
+        "title": "Evidence and quality gates",
+        "chart_or_table": "Metrics: 40% faster first draft cycle\n3 quality gates\n8 pilot teams\n60-day rollout.",
+        "insight": "approve a controlled pilot with one ESG report and one product launch deck."
+      }
+    },
+    {
+      "intent": "contents",
+      "content": {
+        "title": "Discussion flow",
+        "agenda_items": [
+          "Context",
+          "Evidence",
+          "Operating model",
+          "Decision ask"
+        ]
+      }
+    },
+    {
+      "intent": "closing",
+      "content": {
+        "title": "approve a controlled pilot with one ESG report and one product launch deck."
+      }
+    }
+  ]
+}

@@ -1,8 +1,11 @@
 node_modules/
 *.pptx
+!Danone Real Templates/
+!Danone Real Templates/Standard Danone Template.pptx
 *.pdf
 *.png
 *.jpg
+*.odp
 *.log
 .DS_Store
 screenshots/

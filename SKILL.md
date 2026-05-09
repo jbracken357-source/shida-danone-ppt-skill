@@ -8,7 +8,7 @@ tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf]
 
 # Shida Danone PPT Skill
 
-> TL;DR：达能官网(light-first)风格幻灯片。走需求澄清→叙事弧→多文件架构→Junior pass(确认)→Full pass→交付。要可编辑PPTX就从第一行遵守4条硬约束；默认交付**纯 editable**，不要在 editable 上再铺截图覆盖层。
+> TL;DR：真实 Danone 企业 PPT 模板优先。正式可编辑 PPTX 先复用 `Danone Real Templates/Standard Danone Template.pptx` 的 master/layout/placeholders；HTML 多文件管线用于预览、PDF、图片铺底和无法映射到真实模板的兜底页面。要走 HTML→editable PPTX 时才从第一行遵守4条硬约束；默认不要在 editable 上再铺截图覆盖层。
 
 ## Danone 品牌资产协议（动手前必做）
 
@@ -41,7 +41,92 @@ tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf]
 
 ---
 
+## 真实模板保真协议（优先级最高）
+
+> 当仓库中存在 `Danone Real Templates/*.pptx` 时，它们是真实 Danone 企业模板，比官网 token 和手写 CSS 规则优先。
+
+### Step 0 · Profile 真实模板
+
+在开始正式 PPTX 生成前，先确认 manifest 是最新的：
+
+```bash
+python scripts/profile_danone_template.py "Danone Real Templates/Standard Danone Template.pptx" --out templates/danone-template-manifest.json
+python -m unittest tests.test_profile_danone_template tests.test_layout_map tests.test_build_native_pptx -v
+```
+
+manifest 必须记录：
+- slide size: 13.333 × 7.5 inch
+- fonts: `Danone One Condensed` / `Danone One Light`
+- 真实 themes、layouts、placeholders
+- layout families，例如 `two-content`、`three-column`、`full-image`、`big-message`
+
+### Step 0.5 · 从描述生成 native PPTX slide plan
+
+正式可编辑 PPTX 不从 HTML 导出。用户只给材料描述或任务描述时，先用 brief 入口生成可审阅的 JSON plan 和 template-native PPTX：
+
+```bash
+python scripts/brief_to_native_deck.py --title "Deck title" --brief-file brief.md --slides 6 --out deck-native.pptx --out-plan plan.json
+```
+
+这个入口只重组用户提供的信息；材料缺口必须保留“待补充”占位，不编造业务事实。它默认只选当前真实模板样张能稳定复制的 native intent。已有完整页级规划时，再手写或编辑 JSON plan：
+
+```json
+{
+  "slides": [
+    {
+      "intent": "opening-cover",
+      "content": {
+        "title": "Deck title",
+        "subtitle_or_date": "May 2026"
+      }
+    },
+    {
+      "intent": "two-column",
+      "content": {
+        "title": "Two operating shifts",
+        "left_content": "Left column",
+        "right_content": "Right column"
+      }
+    }
+  ]
+}
+```
+
+`intent` 必须来自 `templates/layout-map.json`。builder 会优先找 preferred layout 对应的真实 sample slide；如果 preferred layout 没有 sample slide，则按 fallback layout 找可复制的真实 sample slide。
+
+### Step 1 · 用 layout-map 选真实版式
+
+`templates/layout-map.json` 是内容意图到真实模板 layout 的桥：
+
+| 意图 | 用途 | 生成要求 |
+|------|------|----------|
+| `opening-cover` | 封面 | 使用真实 Title Slide layout，不重画圆形/图片结构 |
+| `contents` | 目录 | 保留模板编号和图片结构 |
+| `section-photo` | 章节/摄影页 | 当前 native builder 不替换图片；走 HTML fallback，或等实现原生图片替换后再纳入 native |
+| `big-message` | 核心观点 | 使用模板 highlighter/underline 语言 |
+| `two-column` | 对比/论证 | 填充真实左右 placeholders |
+| `three-column` | 三支柱/框架 | 填充真实三栏 placeholders |
+| `image-content` | 图文页 | 当前 native builder 不替换图片；走 HTML fallback，避免误用模板样张图片 |
+| `chart-or-table` | 数据页 | 优先原生 PPT 图表/表格 |
+| `closing` | 结束页 | 使用真实 Closing Slide layout |
+
+### Step 2 · 生成策略
+
+1. **正式可编辑 PPTX**：复制真实模板中的 layout 或 sample slide，填充已有 placeholders。不要用 HTML 坐标重建模板几何。
+2. **浏览器/PDF/图片 PPTX**：可继续用多文件 HTML 管线，因为 Chromium 渲染对视觉最稳定。
+3. **HTML→editable PPTX**：仅用于没有对应真实 layout 的自定义页，并严格遵守下方 4 条硬约束。
+4. **质量门**：生成后用 LibreOffice/PowerPoint 渲染抽查，确认字体、色带、页码、图片裁切、placeholder 溢出都与模板一致。
+
+### Step 3 · 不要做的事
+
+- 不要把真实模板截图当背景再覆盖文本作为默认方案；这会牺牲编辑体验。
+- 不要用官网 token 替代模板内嵌 theme/font，除非目标是 HTML 预览或模板缺失。
+- 不要混用其他企业模板或手写新 master。
+- 不要手写 logo、页码、边栏色条；这些应从 master/layout 继承。
+
 ## Danone 设计系统
+
+> 以下 token 只用于 HTML 预览和 fallback 页面。正式 PPTX 以 `templates/danone-template-manifest.json` 和真实 `.pptx` 模板为准。
 
 > 以下 token 对照 2026-05-08 danone.com 官网 CSS 验证。
 
@@ -102,13 +187,13 @@ Max 1280px / Content 1120px / Padding 80px / Section vertical 80-96px
 
 ```
 需要同事改文字？
-  ├─ 是 → PPTX可编辑 → 从第一行遵守4条硬约束（见下方）
+  ├─ 是 → 真实模板 PPTX → 复制 `Danone Real Templates/*.pptx` 的 layout/sample slide 并填充 placeholders
   └─ 否 → 要PDF吗？
            ├─ 是 → 浏览器+PDF → 无特殊约束
            └─ 否 → 浏览器播放 或 PPTX图片铺底 → 无特殊约束
 ```
 
-**用户说"都需要"** → 按 **PPTX可编辑** 约束写（超集，覆盖所有场景）。
+**用户说"都需要"** → 正式可编辑 PPTX 仍以真实模板为主；HTML 只作为 PDF/浏览器预览或无法映射到真实 layout 的 fallback。
 
 #### PPTX可编辑的 4 条硬约束
 
@@ -119,7 +204,8 @@ Max 1280px / Content 1120px / Padding 80px / Section vertical 80-96px
 
 #### PPTX 可编辑默认策略
 
-- 默认生成**纯 editable PPTX**：`--mode editable`，文字和形状可直接编辑。
+- 默认生成**template-native editable PPTX**：复用真实 Danone 模板的 master/layout/placeholders，文字和形状可直接编辑。
+- 只有当某页无法稳定映射到 `templates/layout-map.json` 的真实 layout 时，才走 HTML→editable PPTX fallback（`--mode editable`）并遵守下方 4 条硬约束。
 - 不要默认在 editable 上铺一层全页截图。这样虽然视觉完全保真，但会挡住底层可编辑对象，用户编辑体验差。
 - 只有当用户明确要求“打开效果必须和 PDF 逐像素一致，编辑性次要”时，才做“底层 editable + 顶层截图”的 hybrid 方案，并明确告知编辑前要移开/删除顶层截图。
 - editable 与 PDF 允许有轻微字体度量、圆角、边框渲染差异；只要整体布局、层级、颜色和可读性一致，优先保留纯 editable。
@@ -149,9 +235,17 @@ Max 1280px / Content 1120px / Padding 80px / Section vertical 80-96px
 
 🛑 **检查点 2**：节奏规划表发给用户确认，**等回复**再继续。
 
-### Step 2 · 架构选择
+### Step 2 · 生成架构选择
 
-**本 skill 只用多文件架构**。不采用 guizang-ppt-skill 的单文件方案，原因：
+先按交付目标选择架构，不要无条件进入 HTML 多文件管线：
+
+| 目标 | 主架构 | 规则 |
+|------|--------|------|
+| 正式可编辑 PPTX | **真实模板 native PPTX** | 从 `Danone Real Templates/Standard Danone Template.pptx` 复制匹配的 layout 或 sample slide，填充原生 placeholders。不要用 HTML 坐标重建模板几何。 |
+| 浏览器播放 / PDF / PPTX 图片铺底 | HTML 多文件 | 用下方多文件架构；它是预览和视觉保真的渲染管线，不是正式 editable PPTX 的默认来源。 |
+| 无真实 layout 的特殊页 | HTML→editable fallback | 只有 layout-map 无法覆盖时使用；从第一行遵守 4 条硬约束。 |
+
+HTML 分支不采用 guizang-ppt-skill 的单文件方案，原因：
 
 | 维度 | guizang 单文件（`<section>` 切换） | huashu 多文件（iframe 拼接） |
 |------|------------------------------------|---------------------------|
@@ -162,9 +256,9 @@ Max 1280px / Content 1120px / Padding 80px / Section vertical 80-96px
 | 调试 | ❌ 一处 CSS 出错全 deck 翻车 | ✅ 一页出错只影响自己 |
 | 内嵌交互 | ✅ 跨页共享状态简单 | 🟡 需 postMessage |
 
-**结论**：企业报告 deck 的交付要求（PDF + PPTX + 可编辑）决定了多文件是唯一可行的架构。guizang 单文件的「WebGL 背景」「横向翻页」在企业场景是负担不是能力。
+**结论**：正式可编辑 PPTX 走真实模板 native 路径；只有 HTML 分支使用多文件架构。guizang 单文件的「WebGL 背景」「横向翻页」在企业场景是负担不是能力。
 
-生成目录结构：
+HTML 分支目录结构：
 ```
 达能Deck/
 ├── index.html              # 拼接器（本 skill assets/deck_index.html）
@@ -176,9 +270,11 @@ Max 1280px / Content 1120px / Padding 80px / Section vertical 80-96px
     └── ...
 ```
 
-### Step 3 · 生成 tokens.css
+### Step 3 · 生成 tokens.css（仅 HTML 分支）
 
-**可直接复制 `templates/tokens.css`** 到项目 `shared/tokens.css`，或按下方代码块手写。所有 slide 引用此文件。
+只有在 Step 2 选择浏览器/PDF/图片铺底/HTML fallback 时才生成 `tokens.css`。正式 template-native PPTX 不使用这里的 CSS token，必须继承真实模板 theme/font/layout。
+
+**HTML 分支可直接复制 `templates/tokens.css`** 到项目 `shared/tokens.css`，或按下方代码块手写。所有 slide 引用此文件。
 
 ```css
 *, *::before, *::after { box-sizing: border-box; }
@@ -200,15 +296,21 @@ body.pptx-canvas { width: 1280px; height: 720px; overflow: hidden; }
 
 ### Step 4 · Junior pass（结构 + 占位）
 
-**做什么**：出 2-3 页骨架（封面 + 核心内容页 + 数据页），写好 tokens.css 和目录结构。
+**做什么**：出 2-3 页骨架（封面 + 核心内容页 + 数据页），先证明选定架构能保留 Danone 真实模板语言。
 
-**输出规格**：
+**template-native PPTX 输出规格**：
+- 从 `templates/layout-map.json` 为每页选择真实 layout intent（例如 `opening-cover`、`two-column`、`chart-or-table`）。
+- 复制真实模板 layout 或 sample slide，不重画 logo、页码、色带、圆形、图片裁切结构。
+- 只填充已有 placeholders；缺素材时保留诚实 placeholder，不编造内容。
+- Junior pass 交付一个可打开的 `.pptx` 骨架，并说明每页使用的 layout 名称。
+
+**HTML 分支输出规格**：
 - 每页一个独立 HTML 文件（多文件模式）或 `<section>`（单文件）
 - 布局结构完整（网格/分栏/留白比例正确）
 - 内容用灰块 + 文字标签占位（如 `[此处放ESG数据图表]`），**不编造内容**
 - 达能 token（色值/字体/圆角）已就位
 
-**展示方式**：列出文件路径，让用户在浏览器打开对应文件查看效果。
+**展示方式**：template-native PPTX 列出 PPTX 路径和每页 layout；HTML 分支列出文件路径，让用户在浏览器打开对应文件查看效果。
 
 🛑 **检查点 3**：用户确认 Junior pass 后再进 Full pass。
 - 用户说 OK → 继续 Step 5
@@ -255,11 +357,12 @@ WSL/Ubuntu 环境下 `npx playwright install` 常因 headless-shell 下载超时
 
 | 目标 | 命令 | 成功标志 |
 |------|------|---------|
+| 正式可编辑 PPTX | `python scripts/build_native_pptx.py --plan plan.json --out deck-native.pptx` | 输出 `Wrote ... (N native slides)`；PPTX 打开后仍继承 Danone master/layout，文字可编辑，未出现 HTML 重建痕迹 |
 | PDF | `node scripts/export_deck_pdf.mjs --slides slides/ --out deck.pdf --width 1280 --height 720` | 输出 `✓ Wrote ...pdf (X KB, N pages, vector)` |
 | PPTX 图片铺底 | `node scripts/export_deck_pptx.mjs --slides slides/ --out deck-image.pptx --mode image --width 1280 --height 720` | 输出 `✓ Wrote ...pptx (N slides, image mode)` |
-| PPTX 可编辑 | `node scripts/export_deck_pptx.mjs --slides slides/ --out deck-editable.pptx --mode editable` | 输出 `✓ Wrote ...pptx (N/N slides, editable mode)` |
+| HTML→editable fallback | `node scripts/export_deck_pptx.mjs --slides slides/ --out deck-editable.pptx --mode editable` | 输出 `✓ Wrote ...pptx (N/N slides, editable mode)` |
 
-**默认三种产物全部导出**：`deck.pdf` + `deck-image.pptx` + `deck-editable.pptx`。如果用户只要其中一种或两种，按需运行。
+**默认按用户要的格式导出**。用户要正式可编辑 PPTX 时，不要默认用 `scripts/export_deck_pptx.mjs --mode editable` 替代真实模板 native 生成；该脚本只属于 HTML fallback。
 
 **重要**：当 HTML 使用 `body.pptx-canvas { width:1280px; height:720px; }` 时，PDF 和 image PPTX 也默认用 `--width 1280 --height 720`，这样三种产物尺寸一致。只有用户明确要求高清 PDF 时才生成额外 1920×1080 版本。
 
@@ -302,6 +405,7 @@ grep -rP 'width:\s*\d+pt' slides/                   # 有输出 = 用了 pt 单�
 | 项目 `package.json` 有 `"type":"module"` 导致 `html2pptx.js` require 失败 | 当前脚本会自动复制临时 `.cjs` 再加载；如果旧脚本失败，删除 `"type":"module"` 或把 `html2pptx.js` 改为 `.cjs` |
 | editable 与 PDF 有轻微字体/圆角差异 | 接受纯 editable；不要为了像素一致默认加截图覆盖层 |
 | PDF 导出后字体显示为方块 | Google Fonts 未加载，检查网络或改用系统字体 fallback |
+| LibreOffice 转 PDF 前输出目录不存在 | 先创建输出目录；否则 Windows 上可能只返回非零状态且没有清晰错误文本 |
 | 用户拒绝回答问题清单 | 按 best judgment 做 1 个主方案，交付时标注 assumption |
 | 导出脚本异常 | 降级方案：`npm install playwright pdf-lib pptxgenjs sharp` 后自写导出脚本（playwright 截图 + pdf-lib 合并） |
 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>05 Workflow Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<style>
+  .pipeline { margin-top: 46px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; align-items: stretch; }
+  .step { min-height: 326px; border-top: 6px solid var(--dn-blue); }
+  .step-num { width: 46px; height: 46px; border-radius: 50%; background: var(--dn-blue); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+  .step-num p { font-size: 18px; font-weight: 700; color: #fff; }
+  .step h3 { font-size: 22px; line-height: 1.16; color: var(--dn-blue-dark); }
+  .step p { margin-top: 16px; font-size: 17px; line-height: 1.32; color: var(--dn-text-secondary); }
+</style>
+</head>
+<body class="pptx-canvas">
+<main class="slide">
+  <p class="eyebrow">Operating workflow</p>
+  <h2 class="title" style="width:940px;">把一次性创作变成可重复的交付流程</h2>
+  <div class="pipeline">
+    <div class="card step">
+      <div class="step-num"><p>1</p></div>
+      <h3>澄清目标</h3>
+      <p>确认受众、场景、页数、素材和最终交付格式。</p>
+    </div>
+    <div class="card step">
+      <div class="step-num"><p>2</p></div>
+      <h3>规划节奏</h3>
+      <p>先定义叙事弧，再把每页角色映射到版式。</p>
+    </div>
+    <div class="card step">
+      <div class="step-num"><p>3</p></div>
+      <h3>生成页面</h3>
+      <p>多文件架构隔离每页，降低样式串扰和协作冲突。</p>
+    </div>
+    <div class="card step">
+      <div class="step-num"><p>4</p></div>
+      <h3>导出交付</h3>
+      <p>同时覆盖 PDF、图片 PPTX 和可编辑 PPTX。</p>
+    </div>
+    <div class="card step">
+      <div class="step-num"><p>5</p></div>
+      <h3>质量验收</h3>
+      <p>用截图、控制台、结构检查和抽样渲染确认效果。</p>
+    </div>
+  </div>
+  <div class="footer">
+    <p>Workflow pipeline</p>
+    <p>05 / 08</p>
+  </div>
+</main>
+</body>
+</html>

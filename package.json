@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test": "python -m unittest discover -v",
+    "smoke:brief": "python scripts/brief_to_native_deck.py --title \"Danone presentation factory pilot\" --brief-file smoke-tests/brief-native/brief.md --slides 6 --out smoke-tests/brief-native/deck-native.pptx --out-plan smoke-tests/brief-native/plan.json"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "playwright": "^1.59.1",
+    "pptxgenjs": "^4.0.1",
+    "sharp": "^0.34.5"
+  }
+}

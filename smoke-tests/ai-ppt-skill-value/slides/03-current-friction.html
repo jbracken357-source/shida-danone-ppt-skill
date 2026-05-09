@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>03 Current Friction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<style>
+  .layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: 58px; height: 542px; align-items: center; }
+  .stack { display: grid; gap: 18px; }
+  .friction { display: grid; grid-template-columns: 58px 1fr; gap: 18px; align-items: start; }
+  .num { width: 48px; height: 48px; border-radius: 50%; background: var(--dn-tint); display: flex; align-items: center; justify-content: center; }
+  .num p { font-size: 18px; font-weight: 700; color: var(--dn-blue-dark); }
+  .friction h3 { font-size: 24px; line-height: 1.18; color: var(--dn-blue-dark); }
+  .friction p { margin-top: 8px; font-size: 18px; line-height: 1.35; color: var(--dn-text-secondary); }
+  .photo-box { height: 430px; }
+</style>
+</head>
+<body class="pptx-canvas">
+<main class="slide">
+  <div class="layout">
+    <div>
+      <p class="eyebrow">Why now</p>
+      <h2 class="title">传统 PPT 生产的瓶颈已经不是工具熟练度</h2>
+      <p class="body-copy" style="margin-top:28px;">瓶颈来自知识散落、标准不一致、输出不可验证，以及每次项目都从零组织流程。</p>
+    </div>
+    <div class="stack">
+      <div class="friction">
+        <div class="num"><p>1</p></div>
+        <div>
+          <h3>品牌资产散落</h3>
+          <p>模板、字体、色值、母版和历史案例分散在不同人和目录里。</p>
+        </div>
+      </div>
+      <div class="friction">
+        <div class="num"><p>2</p></div>
+        <div>
+          <h3>叙事质量依赖个人</h3>
+          <p>同一主题在不同团队间会出现结构、语气和证据深度的明显差异。</p>
+        </div>
+      </div>
+      <div class="friction">
+        <div class="num"><p>3</p></div>
+        <div>
+          <h3>导出链路不可审计</h3>
+          <p>PDF、图片版 PPTX、可编辑 PPTX 经常靠人工感觉确认。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <p>Current friction</p>
+    <p>03 / 08</p>
+  </div>
+</main>
+</body>
+</html>
