@@ -1,0 +1,37 @@
+/* Danone Design System Tokens */
+/* 2026-05-08 对照 danone.com 官网 CSS 验证 */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --dn-blue: #005EB8; --dn-blue-mid: #0068CC;
+  --dn-blue-dark: #002677; --dn-blue-light: #0085EB;
+  --dn-green: #207B3B; --dn-tint: #CCDFF1;
+  --dn-text: #262627; --dn-text-secondary: rgba(0,0,0,0.6);
+  --dn-border: rgba(0,0,0,0.15);
+  --dn-font: "Inter","Noto Sans SC",system-ui,sans-serif;
+  --dn-font-display: "Inter Tight","Inter","Noto Sans SC",sans-serif;
+}
+
+body {
+  font-family: var(--dn-font);
+  color: var(--dn-text);
+  background: #fff;
+  margin: 0;
+  line-height: 1.15;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 浏览器演示用 (1920×1080px) */
+body.slide-canvas {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+}
+
+/* PPTX 可编辑导出用 (1280×720px = 960pt×540pt 等效) */
+body.pptx-canvas {
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+}

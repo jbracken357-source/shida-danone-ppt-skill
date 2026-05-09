@@ -1,0 +1,9 @@
+node_modules/
+*.pptx
+*.pdf
+*.png
+*.jpg
+*.log
+.DS_Store
+screenshots/
+__pycache__/
