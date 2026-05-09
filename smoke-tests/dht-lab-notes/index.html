@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Danone Science Lab — Hardware × User Pain Point × Product Link</title>
+<script>
+  window.DECK_MANIFEST = [
+  {
+    "file": "slides/01-cover.html",
+    "label": "Cover"
+  },
+  {
+    "file": "slides/02-narrative-frame.html",
+    "label": "Narrative"
+  },
+  {
+    "file": "slides/03-gut-health.html",
+    "label": "Gut Health"
+  },
+  {
+    "file": "slides/04-physical-recovery-performance.html",
+    "label": "Physical & Recovery Performance"
+  },
+  {
+    "file": "slides/05-clinical-nutrition-tube-feeding.html",
+    "label": "Clinical Nutrition / Tube Feeding"
+  },
+  {
+    "file": "slides/06-showcase-flow.html",
+    "label": "Showcase Flow"
+  }
+];
+  window.DECK_WIDTH = 1280;
+  window.DECK_HEIGHT = 720;
+</script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #f5f7fa; overflow: hidden; font-family: -apple-system, "PingFang SC", sans-serif; }
+  #stage { position: fixed; top: 0; left: 0; transform-origin: top left; background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,0.1); border-radius: 4px; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+  .counter { position: fixed; bottom: 18px; right: 18px; background: rgba(0,0,0,0.55); color: #fff; padding: 6px 14px; border-radius: 999px; font-size: 13px; z-index: 100; }
+  .counter .label { color: rgba(255,255,255,0.72); margin-left: 8px; }
+  .nav-zone { position: fixed; top: 0; bottom: 0; width: 15%; cursor: pointer; z-index: 50; }
+  .nav-zone.left { left: 0; }
+  .nav-zone.right { right: 0; }
+</style>
+</head>
+<body>
+<div id="stage"><iframe id="frame" src="about:blank"></iframe></div>
+<div class="nav-zone left" id="navL"></div>
+<div class="nav-zone right" id="navR"></div>
+<div class="counter" id="counter">1 / 6</div>
+<script>
+(function () {
+  const W = window.DECK_WIDTH;
+  const H = window.DECK_HEIGHT;
+  const deck = window.DECK_MANIFEST;
+  const stage = document.getElementById('stage');
+  const frame = document.getElementById('frame');
+  const counter = document.getElementById('counter');
+  let current = 0;
+  stage.style.width = W + 'px';
+  stage.style.height = H + 'px';
+  function fit() {
+    const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+    const x = (window.innerWidth - W * s) / 2;
+    const y = (window.innerHeight - H * s) / 2;
+    stage.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
+  }
+  function show(idx) {
+    if (idx < 0 || idx >= deck.length) return;
+    current = idx;
+    frame.src = deck[idx].file;
+    counter.innerHTML = (idx + 1) + ' / ' + deck.length + '<span class="label">' + deck[idx].label + '</span>';
+    history.replaceState(null, '', '#' + (idx + 1));
+  }
+  function next() { show(Math.min(current + 1, deck.length - 1)); }
+  function prev() { show(Math.max(current - 1, 0)); }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { e.preventDefault(); show(0); }
+    if (e.key === 'End') { e.preventDefault(); show(deck.length - 1); }
+  });
+  document.getElementById('navL').addEventListener('click', prev);
+  document.getElementById('navR').addEventListener('click', next);
+  window.addEventListener('resize', fit);
+  fit();
+  const hash = location.hash.match(/^#(\d+)$/);
+  show(hash ? Math.max(0, Math.min(deck.length - 1, parseInt(hash[1], 10) - 1)) : 0);
+})();
+</script>
+</body>
+</html>

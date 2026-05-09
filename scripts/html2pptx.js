@@ -193,9 +193,11 @@ function addElements(slideData, targetSlide, pres) {
       let adjustedX = el.position.x;
       let adjustedW = el.position.w;
 
-      // Make single-line text 2% wider to account for underestimate
+      // Make single-line text wider to account for browser-to-PowerPoint
+      // font metric differences. This is especially important when web fonts
+      // fall back to Office/system fonts during editable PPTX rendering.
       if (isSingleLine) {
-        const widthIncrease = el.position.w * 0.02;
+        const widthIncrease = el.position.w * 0.08;
         const align = el.style.align;
 
         if (align === 'center') {
@@ -593,8 +595,12 @@ async function extractSlideData(page) {
         }
       }
 
-      // Extract DIVs with backgrounds/borders as shapes
-      const isContainer = el.tagName === 'DIV' && !textTags.includes(el.tagName);
+      // Extract semantic containers with backgrounds/borders as shapes.
+      // Slide generators often use <main>/<section>/<aside> for full-slide
+      // backgrounds and cards; treating only DIVs as shapes drops those fills
+      // and can make white text render on a white PPT background.
+      const shapeContainerTags = ['DIV', 'MAIN', 'SECTION', 'ASIDE', 'ARTICLE'];
+      const isContainer = shapeContainerTags.includes(el.tagName) && !textTags.includes(el.tagName);
       if (isContainer) {
         const computed = window.getComputedStyle(el);
         const hasBg = computed.backgroundColor && computed.backgroundColor !== 'rgba(0, 0, 0, 0)';
@@ -605,7 +611,7 @@ async function extractSlideData(page) {
             const text = node.textContent.trim();
             if (text) {
               errors.push(
-                `DIV element contains unwrapped text "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}". ` +
+                `${el.tagName.toLowerCase()} element contains unwrapped text "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}". ` +
                 'All text must be wrapped in <p>, <h1>-<h6>, <ul>, or <ol> tags to appear in PowerPoint.'
               );
             }

@@ -39,6 +39,16 @@ class SkillWorkflowTest(unittest.TestCase):
         self.assertIn("python scripts/brief_to_native_deck.py", text)
         self.assertIn("out-plan", text)
 
+    def test_skill_explains_structured_notes_entrypoint(self):
+        text = SKILL.read_text(encoding="utf-8")
+        readme = README.read_text(encoding="utf-8")
+
+        self.assertIn("DHT Lab / show case 类结构化 notes", text)
+        self.assertIn("python scripts/notes_to_danone_deck.py", text)
+        self.assertIn("scripts/notes_to_danone_deck.py", readme)
+        self.assertIn("deck-editable-parity.pptx", text)
+        self.assertIn("deck-editable-parity.pptx", readme)
+
     def test_skill_notes_libreoffice_output_directory_requirement(self):
         text = SKILL.read_text(encoding="utf-8")
 

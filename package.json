@@ -1,7 +1,8 @@
 {
   "scripts": {
     "test": "python -m unittest discover -v",
-    "smoke:brief": "python scripts/brief_to_native_deck.py --title \"Danone presentation factory pilot\" --brief-file smoke-tests/brief-native/brief.md --slides 6 --out smoke-tests/brief-native/deck-native.pptx --out-plan smoke-tests/brief-native/plan.json"
+    "smoke:brief": "python scripts/brief_to_native_deck.py --title \"Danone presentation factory pilot\" --brief-file smoke-tests/brief-native/brief.md --slides 6 --out smoke-tests/brief-native/deck-native.pptx --out-plan smoke-tests/brief-native/plan.json",
+    "smoke:notes": "python scripts/notes_to_danone_deck.py --notes \"smoke-tests/dht-lab-notes/Slide notes.md\" --out-dir smoke-tests/dht-lab-notes --native-pptx smoke-tests/dht-lab-notes/deck-native.pptx --out-plan smoke-tests/dht-lab-notes/plan.json"
   },
   "dependencies": {
     "pdf-lib": "^1.17.1",

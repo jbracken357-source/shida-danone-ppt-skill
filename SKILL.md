@@ -70,6 +70,26 @@ python scripts/brief_to_native_deck.py --title "Deck title" --brief-file brief.m
 
 这个入口只重组用户提供的信息；材料缺口必须保留“待补充”占位，不编造业务事实。它默认只选当前真实模板样张能稳定复制的 native intent。已有完整页级规划时，再手写或编辑 JSON plan：
 
+如果输入是 DHT Lab / show case 类结构化 notes（包含 `## 场景 1｜...`、`### User Pain Points`、`### Hardware`、`### Link to Danone Products`、`### Core Message`），不要走通用 brief 入口；使用 notes 入口，避免 Markdown 标记和小节标题被当成正文塞进版式：
+
+```bash
+python scripts/notes_to_danone_deck.py --notes "Slide notes.md" --out-dir deck-out --native-pptx deck-out/deck-native.pptx --out-plan deck-out/plan.json
+node scripts/export_deck_pdf.mjs --slides deck-out/slides --out deck-out/deck.pdf --width 1280 --height 720
+node scripts/export_deck_pptx.mjs --slides deck-out/slides --out deck-out/deck-image.pptx --mode image --width 1280 --height 720
+```
+
+该入口产出 6 页 smoke deck：封面、统一叙事、3 个场景页、showcase flow。PDF、图片铺底 PPTX 和内容一致的可编辑 PPTX 都来自同一套 HTML slides。
+
+当用户明确要求 **HTML 与 native/editable PPTX 内容一致** 时，正式可编辑交付物应使用 HTML→editable 路径，而不是 template-native placeholder 路径：
+
+```bash
+node scripts/export_deck_pptx.mjs --slides deck-out/slides --out deck-out/deck-editable-parity.pptx --mode editable --width 1280 --height 720
+```
+
+该路径会把 HTML 中的文本、卡片和色块转换为 PowerPoint 原生 text box / shape；文本可编辑，内容与 HTML 一致。必须用渲染后的 PPTX/PDF/PNG 检查，因为“转换成功”不等于视觉正确。
+
+**native PPTX 注意**：notes 入口的 native plan 必须比 HTML 更克制。真实模板 placeholder 会保留模板原字号、全大写、色块和页码结构，不能把 showcase flow 长句、完整痛点清单或解释段落塞进 native 标题/两栏 placeholder。Native 只放短标题、2-3 条痛点/指标和 1 条产品链接；完整叙事留在 HTML/PDF/image PPTX。
+
 ```json
 {
   "slides": [

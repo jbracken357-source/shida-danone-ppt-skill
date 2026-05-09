@@ -1,0 +1,156 @@
+/* Danone Design System Tokens */
+/* 2026-05-08 对照 danone.com 官网 CSS 验证 */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --dn-blue: #005EB8; --dn-blue-mid: #0068CC;
+  --dn-blue-dark: #002677; --dn-blue-light: #0085EB;
+  --dn-green: #207B3B; --dn-tint: #CCDFF1;
+  --dn-text: #262627; --dn-text-secondary: rgba(0,0,0,0.6);
+  --dn-border: rgba(0,0,0,0.15);
+  --dn-font: "Inter","Noto Sans SC",system-ui,sans-serif;
+  --dn-font-display: "Inter Tight","Inter","Noto Sans SC",sans-serif;
+}
+
+body {
+  font-family: var(--dn-font);
+  color: var(--dn-text);
+  background: #fff;
+  margin: 0;
+  line-height: 1.15;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 浏览器演示用 (1920×1080px) */
+body.slide-canvas {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+}
+
+/* PPTX 可编辑导出用 (1280×720px = 960pt×540pt 等效) */
+body.pptx-canvas {
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+}
+
+
+:root {
+  --dn-font: "Microsoft YaHei", "Arial", sans-serif;
+  --dn-font-display: "Microsoft YaHei", "Arial", sans-serif;
+}
+
+h1, h2, h3, h4, p, ul, li {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  padding-left: 22px;
+}
+
+li {
+  margin-bottom: 10px;
+  font-size: 22px;
+  line-height: 1.32;
+  color: var(--dn-text);
+}
+
+.slide {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  padding: 54px 72px 50px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.slide-blue {
+  background: var(--dn-blue);
+  color: #fff;
+}
+
+.eyebrow {
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dn-blue);
+}
+
+.slide-blue .eyebrow,
+.slide-blue .footer p {
+  color: rgba(255,255,255,0.78);
+}
+
+.title {
+  margin-top: 18px;
+  font-family: var(--dn-font-display);
+  font-size: 54px;
+  line-height: 1.04;
+  font-weight: 700;
+  color: var(--dn-text);
+}
+
+.headline {
+  margin-top: 16px;
+  font-family: var(--dn-font-display);
+  font-size: 46px;
+  line-height: 1.05;
+  font-weight: 700;
+  color: var(--dn-text);
+}
+
+.footer {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer p {
+  font-size: 13px;
+  line-height: 1;
+  color: var(--dn-text-secondary);
+}
+
+.card,
+.tint-card,
+.blue-card {
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--dn-border);
+}
+
+.tint-card {
+  background: #F4F8FC;
+  border: 1px solid #D6E6F5;
+}
+
+.blue-card {
+  background: var(--dn-blue);
+}
+
+.blue-card h3,
+.blue-card p,
+.blue-card li {
+  color: #fff;
+}
+
+.metric {
+  font-family: var(--dn-font-display);
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--dn-blue);
+}

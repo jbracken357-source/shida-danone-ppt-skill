@@ -20,6 +20,17 @@ python scripts/brief_to_native_deck.py --title "Deck title" --brief-file brief.m
 
 这个入口会保守重组用户提供的信息，缺内容时使用明确的“待补充”占位，不编造业务事实。
 
+如果用户给的是 DHT Lab / show case 类结构化 slide notes（`## 场景 1｜...`、`### User Pain Points`、`### Hardware`、`### Link to Danone Products`），用 notes 入口一次生成 HTML deck、native 可编辑 PPTX plan 和 native PPTX：
+
+```bash
+python scripts/notes_to_danone_deck.py --notes "Slide notes.md" --out-dir smoke-tests/dht-lab-notes --native-pptx smoke-tests/dht-lab-notes/deck-native.pptx --out-plan smoke-tests/dht-lab-notes/plan.json
+node scripts/export_deck_pdf.mjs --slides smoke-tests/dht-lab-notes/slides --out smoke-tests/dht-lab-notes/deck.pdf --width 1280 --height 720
+node scripts/export_deck_pptx.mjs --slides smoke-tests/dht-lab-notes/slides --out smoke-tests/dht-lab-notes/deck-image.pptx --mode image --width 1280 --height 720
+node scripts/export_deck_pptx.mjs --slides smoke-tests/dht-lab-notes/slides --out smoke-tests/dht-lab-notes/deck-editable-parity.pptx --mode editable --width 1280 --height 720
+```
+
+如果要求 HTML 与可编辑 PPTX 内容一致，使用 `deck-editable-parity.pptx` 作为正式可编辑交付物。`deck-native.pptx` 是真实模板 placeholder 摘要版，会刻意压缩文字；真实模板 placeholder 保留原字号和大写风格，长句会被放大、裁切或挤压。
+
 已有完整页级规划时，也可以直接用 native builder：
 
 ```bash
@@ -47,6 +58,7 @@ python scripts/build_native_pptx.py --plan plan.json --out deck-native.pptx
 - `templates/danone-template-manifest.json` — 真实模板的 slide size、theme、字体、layout、placeholder inventory
 - `templates/layout-map.json` — 将语义意图映射到真实 Danone layouts，例如封面、目录、两栏、大图、三栏、收尾页
 - `scripts/brief_to_native_deck.py` — 从材料描述或任务描述生成 native slide plan，并直接产出真实模板可编辑 PPTX
+- `scripts/notes_to_danone_deck.py` — 从结构化 DHT Lab slide notes 生成 HTML、native plan 和真实模板可编辑 PPTX
 - `scripts/build_native_pptx.py` — 复制真实 sample slide XML 并替换可编辑文本的 native PPTX builder
 
 生成正式可编辑 PPTX 时，默认策略是选取 `layout-map.json` 中的真实 layout，复制真实模板的 layout 或 sample slide，并填充原生 placeholders。只有在内容无法稳定映射到真实模板时，才退回 HTML → editable PPTX；PDF、浏览器播放和图片铺底 PPTX 可以继续使用 HTML 管线。
