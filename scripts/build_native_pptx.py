@@ -8,6 +8,7 @@ package, clones real sample slide XML parts, and replaces editable text runs.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import re
 import zipfile
@@ -150,6 +151,7 @@ def content_values(intent: str, content: dict) -> list[str]:
         "big-message": ["headline", "supporting_text"],
         "two-column": ["title", "left_content", "right_content"],
         "three-column": ["title", "column_1", "column_2", "column_3"],
+        "scenario-detail": ["title", "column_1", "column_2", "column_3"],
         "image-content": ["title", "body"],
         "chart-or-table": ["title", "chart_or_table", "insight"],
         "closing": ["title"],
@@ -180,12 +182,47 @@ def shape_key(sp: ET.Element) -> tuple[str, str]:
 
 
 def set_shape_text(sp: ET.Element, value: str) -> None:
-    text_nodes = sp.findall(".//a:t", NS)
-    if not text_nodes:
+    """Replace text in a shape, splitting newlines into separate paragraphs."""
+    tx_body = sp.find(".//p:txBody", NS)
+    if tx_body is None:
         return
-    text_nodes[0].text = value
-    for node in text_nodes[1:]:
-        node.text = ""
+
+    paragraphs = list(tx_body.findall("a:p", NS))
+    if not paragraphs:
+        return
+
+    # Use the first paragraph as a template for properties
+    template_p = paragraphs[0]
+    pPr = template_p.find("a:pPr", NS)
+
+    # Remove all existing paragraphs
+    for p in paragraphs:
+        tx_body.remove(p)
+
+    lines = value.split("\n") if value else [""]
+
+    for line in lines:
+        new_p = ET.SubElement(tx_body, f"{{{NS['a']}}}p")
+        if pPr is not None:
+            new_p.append(copy.deepcopy(pPr))
+        if line:
+            r = ET.SubElement(new_p, f"{{{NS['a']}}}r")
+            # Always add explicit rPr with cap="none" to override layout/master-level cap="all"
+            template_r = template_p.find("a:r", NS)
+            if template_r is not None:
+                template_rPr = template_r.find("a:rPr", NS)
+                if template_rPr is not None:
+                    rPr = copy.deepcopy(template_rPr)
+                    rPr.attrib["cap"] = "none"
+                    r.append(rPr)
+                else:
+                    rPr = ET.SubElement(r, f"{{{NS['a']}}}rPr")
+                    rPr.attrib["cap"] = "none"
+            else:
+                rPr = ET.SubElement(r, f"{{{NS['a']}}}rPr")
+                rPr.attrib["cap"] = "none"
+            t = ET.SubElement(r, f"{{{NS['a']}}}t")
+            t.text = line
 
 
 def cleanup_unmapped_sample_content(root: ET.Element, mapped: dict[int, str], content: dict, intent: str) -> None:
@@ -198,7 +235,14 @@ def cleanup_unmapped_sample_content(root: ET.Element, mapped: dict[int, str], co
         if index in mapped:
             continue
         ph_type, ph_idx = shape_key(sp)
-        if ph_type == "sldNum" or ph_idx:
+        if ph_type in TEMPLATE_CHROME_PLACEHOLDER_TYPES:
+            continue
+        if ph_type == "body" and ph_idx:
+            # Remove unmapped body placeholders so they don't leak sample text
+            if sp in list(sp_tree):
+                sp_tree.remove(sp)
+            continue
+        if ph_idx:
             continue
         if sp in list(sp_tree):
             sp_tree.remove(sp)
@@ -210,7 +254,7 @@ def cleanup_unmapped_sample_content(root: ET.Element, mapped: dict[int, str], co
     for connector in list(sp_tree.findall("p:cxnSp", NS)):
         sp_tree.remove(connector)
 
-    if intent not in {"opening-cover", "closing"}:
+    if intent not in {"opening-cover", "closing", "scenario-detail"}:
         for sp in list(sp_tree.findall("p:sp", NS)):
             ph = sp.find("p:nvSpPr/p:nvPr/p:ph", NS)
             texts = [node for node in sp.findall(".//a:t", NS) if node.text and node.text.strip()]
@@ -239,6 +283,12 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
                 value = "\n".join(str(item) for item in value)
             mapped[index] = str(value)
 
+    def pick(*keys: str) -> int | None:
+        for k in keys:
+            if k in by_idx:
+                return by_idx[k]
+        return None
+
     if intent == "opening-cover":
         put(title_shape, "title")
         put(by_idx.get("10"), "subtitle_or_date")
@@ -253,10 +303,16 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
         put(by_idx.get("1"), "chart_or_table")
         put(by_idx.get("2") if "2" in by_idx else by_idx.get("14"), "insight")
     elif intent == "three-column":
-        put(by_idx.get("13") if "13" in by_idx else title_shape, "title")
-        put(by_idx.get("1"), "column_1")
-        put(by_idx.get("2"), "column_2")
-        put(by_idx.get("14") if "14" in by_idx else by_idx.get("3"), "column_3")
+        put(pick("13") if pick("13") is not None else title_shape, "title")
+        put(pick("1", "21", "24"), "column_1")
+        put(pick("2", "22", "25"), "column_2")
+        put(pick("14", "3", "23", "26"), "column_3")
+    elif intent == "scenario-detail":
+        # Scenario pages: title + 3 columns (pain points, data, products)
+        put(pick("13") if pick("13") is not None else title_shape, "title")
+        put(pick("1", "21", "24"), "column_1")
+        put(pick("2", "22", "25"), "column_2")
+        put(pick("14", "3", "23", "26"), "column_3")
     elif intent == "big-message":
         put(by_idx.get("15") if "15" in by_idx else title_shape, "headline")
         put(by_idx.get("13"), "supporting_text")
@@ -274,6 +330,25 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
     return mapped
 
 
+def strip_text_transforms(root: ET.Element) -> None:
+    """Remove forced ALL CAPS text transforms from a slide."""
+    for elem in root.iter():
+        if elem.attrib.get("cap") == "all":
+            del elem.attrib["cap"]
+
+
+def strip_caps_from_layouts(parts: dict[str, bytes]) -> None:
+    """Neutralise cap='all' in all slide layout XML so it never forces uppercase."""
+    for name in list(parts.keys()):
+        if name.startswith("ppt/slideLayouts/slideLayout") and name.endswith(".xml"):
+            root = ET.fromstring(parts[name])
+            for elem in root.iter():
+                tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
+                if tag in {"defRPr", "rPr"} and elem.attrib.get("cap") == "all":
+                    elem.attrib["cap"] = "none"
+            parts[name] = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
 def replace_text_runs(slide_xml: bytes, values: list[str], intent: str = "", content: dict | None = None) -> bytes:
     root = ET.fromstring(slide_xml)
     shapes = [sp for sp in root.findall(".//p:sp", NS) if sp.findall(".//a:t", NS)]
@@ -289,6 +364,7 @@ def replace_text_runs(slide_xml: bytes, values: list[str], intent: str = "", con
         text_nodes = [node for node in root.findall(".//a:t", NS) if node.text and node.text.strip()]
         for node, value in zip(text_nodes, values):
             node.text = value
+    strip_text_transforms(root)
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
@@ -334,6 +410,7 @@ def build_presentation(
             for info in zf.infolist()
             if not is_slide_part(info.filename) and not is_slide_rels_part(info.filename)
         }
+        strip_caps_from_layouts(parts)
 
         presentation = ET.fromstring(parts["ppt/presentation.xml"])
         presentation_rels = ET.fromstring(parts["ppt/_rels/presentation.xml.rels"])

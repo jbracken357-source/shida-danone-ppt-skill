@@ -2,61 +2,61 @@
   "template_manifest": "danone-template-manifest.json",
   "default_template": "Danone Real Templates/Standard Danone Template.pptx",
   "default_colorway": "Blue",
-  "strategy": "Use the real Danone PPTX template as the source of truth. Select a semantic intent, copy the preferred layout or sample slide, then fill existing placeholders instead of recreating layout geometry from HTML.",
+  "strategy": "Use the real Danone PPTX template as the source of truth. Select a semantic intent, copy the preferred layout or sample slide, then fill existing placeholders instead of recreating layout geometry from HTML. Layouts are chosen from ACTUAL sample slides in the template — not all 252 layouts have sample slides.",
   "intents": {
     "opening-cover": {
       "preferred_layout": "标题幻灯片",
-      "fallback_layouts": ["Title Slide + Photo ", "Title Slide Square", "Blue: Title Only"],
+      "fallback_layouts": ["Title Slide + Photo ", "Title Slide Square", "Title Slide Square + Photo"],
       "required_content": ["title", "subtitle_or_date"],
       "notes": "Use for the first slide. Preserve the large Danone circle/photo geometry from the source layout."
     },
     "contents": {
       "preferred_layout": "Contents",
-      "fallback_layouts": ["Contents #2", "Blue: Two Content"],
+      "fallback_layouts": ["Contents #2", "Blue: Two Content Box"],
       "required_content": ["agenda_items"],
       "notes": "Use for agenda pages. Keep item numbering and image treatment inherited from the template."
     },
     "section-photo": {
       "preferred_layout": "Blue: Full Image",
-      "fallback_layouts": ["Blue: Text w/ Large Image", "Blue: Two Content Image"],
+      "fallback_layouts": ["Blue: Text w/ Large Image", "Red: Two Content Image"],
       "required_content": ["title", "image"],
       "native_supported": false,
       "notes": "Use for section breaks and photography-led pages. Native image replacement is not implemented yet; route this intent through the HTML fallback path."
     },
     "big-message": {
-      "preferred_layout": "Blue: Full White - Big Text",
-      "fallback_layouts": ["Blue: Full Colour - Big Text", "Blue: Full White - Big Text / No Caps"],
+      "preferred_layout": "Blue: Full White - Big Text / No Caps",
+      "fallback_layouts": ["Blue: Full White - Big Text", "Blue: Text w/ Large Image - Big Text", "Blue: Two Content - Big Text"],
       "required_content": ["headline", "supporting_text"],
-      "notes": "Use for single takeaways. Prefer template highlighter/underline styles over custom marks."
+      "notes": "Use for single takeaways. Prefer No Caps variants to avoid forced uppercase."
     },
     "two-column": {
-      "preferred_layout": "Blue: Two Content",
-      "fallback_layouts": ["Blue: Two Content Box", "Blue: Two Content - Big Text", "Aqua: Two Content"],
+      "preferred_layout": "Blue: Two Content Box",
+      "fallback_layouts": ["Blue: Two Content - Big Text", "Aqua: Two Content", "Green: Two Content", "Orange: Two Content Box"],
       "required_content": ["title", "left_content", "right_content"],
       "notes": "Use for balanced argument or comparison pages."
     },
     "three-column": {
-      "preferred_layout": "Blue: Three Column",
-      "fallback_layouts": ["Blue: Three Column w/Image", "Blue: Three Column"],
+      "preferred_layout": "Aqua: Three Column w/Image",
+      "fallback_layouts": ["Salmon: Three Column", "Red: Three Column"],
       "required_content": ["title", "column_1", "column_2", "column_3"],
-      "notes": "Use for frameworks, pillars, and grouped recommendations."
+      "notes": "Use for scenario pages with three categories (pain points, data, products)."
     },
     "image-content": {
       "preferred_layout": "Blue: Text w/ Large Image",
-      "fallback_layouts": ["Blue: Content w/Image Land", "Blue: Content w/Image Port"],
+      "fallback_layouts": ["Yellow: Content w/Image Land", "Blue: Content w/Image Port"],
       "required_content": ["title", "body", "image"],
       "native_supported": false,
       "notes": "Use when a real Danone/product/photo asset carries the page. Native image replacement is not implemented yet; route this intent through the HTML fallback path."
     },
     "chart-or-table": {
-      "preferred_layout": "Blue: Two Content",
-      "fallback_layouts": ["Blue: Two Content Box", "Blue: Three Column"],
+      "preferred_layout": "Blue: Two Content Box",
+      "fallback_layouts": ["Red: Three Column", "Salmon: Three Column", "Aqua: Two Content Box"],
       "required_content": ["title", "chart_or_table", "insight"],
       "notes": "Use native PowerPoint charts/tables where possible so the output remains editable."
     },
     "closing": {
       "preferred_layout": "Closing Slide",
-      "fallback_layouts": ["Closing Slide Square", "Blue: Title Only"],
+      "fallback_layouts": ["Closing Slide Square", "Orange: Title Only"],
       "required_content": ["title"],
       "notes": "Use for thank-you and final action slides."
     }

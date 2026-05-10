@@ -1,16 +1,25 @@
 /* Danone Design System Tokens */
-/* 2026-05-08 对照 danone.com 官网 CSS 验证 */
+/* Blue-White Colorway Only — derived from Standard Danone Template */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --dn-blue: #005EB8; --dn-blue-mid: #0068CC;
-  --dn-blue-dark: #002677; --dn-blue-light: #0085EB;
-  --dn-green: #207B3B; --dn-tint: #CCDFF1;
-  --dn-text: #262627; --dn-text-secondary: rgba(0,0,0,0.6);
+  /* Core blue palette (from template theme accent1 / dk2) */
+  --dn-blue: #005EB8;
+  --dn-blue-mid: #0068CC;
+  --dn-blue-dark: #002677;
+  --dn-blue-light: #00ACED;
+
+  /* Neutral & tints */
+  --dn-tint: #CCDFF1;
+  --dn-soft: #F4F8FC;
+  --dn-text: #262627;
+  --dn-text-secondary: rgba(0,0,0,0.6);
   --dn-border: rgba(0,0,0,0.15);
-  --dn-font: "Inter","Noto Sans SC",system-ui,sans-serif;
-  --dn-font-display: "Inter Tight","Inter","Noto Sans SC",sans-serif;
+
+  /* Fonts: template uses Danone One Condensed / Danone One Light */
+  --dn-font: "Danone One Light", "Arial", sans-serif;
+  --dn-font-display: "Danone One Condensed", "Arial", sans-serif;
 }
 
 body {
@@ -22,14 +31,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 浏览器演示用 (1920×1080px) */
+/* Browser demo canvas (1920x1080px) */
 body.slide-canvas {
   width: 1920px;
   height: 1080px;
   overflow: hidden;
 }
 
-/* PPTX 可编辑导出用 (1280×720px = 960pt×540pt 等效) */
+/* PPTX export canvas (1280x720px) */
 body.pptx-canvas {
   width: 1280px;
   height: 720px;
@@ -38,8 +47,8 @@ body.pptx-canvas {
 
 
 :root {
-  --dn-font: "Microsoft YaHei", "Arial", sans-serif;
-  --dn-font-display: "Microsoft YaHei", "Arial", sans-serif;
+  --dn-font: "Danone One Light", "Arial", "Microsoft YaHei", sans-serif;
+  --dn-font-display: "Danone One Condensed", "Arial", "Microsoft YaHei", sans-serif;
 }
 
 h1, h2, h3, h4, p, ul, li {
@@ -56,6 +65,15 @@ li {
   font-size: 22px;
   line-height: 1.32;
   color: var(--dn-text);
+}
+
+/* Blue bullets per Danone template spec */
+li::marker {
+  color: var(--dn-blue);
+}
+
+.blue-card li::marker {
+  color: #fff;
 }
 
 .slide {
@@ -133,7 +151,7 @@ li {
 }
 
 .tint-card {
-  background: #F4F8FC;
+  background: var(--dn-soft);
   border: 1px solid #D6E6F5;
 }
 

@@ -20,8 +20,8 @@ DEFAULT_TOKENS = ROOT / "templates" / "tokens.css"
 
 BASE_COMPONENT_CSS = """
 :root {
-  --dn-font: "Microsoft YaHei", "Arial", sans-serif;
-  --dn-font-display: "Microsoft YaHei", "Arial", sans-serif;
+  --dn-font: "Danone One Light", "Arial", "Microsoft YaHei", sans-serif;
+  --dn-font-display: "Danone One Condensed", "Arial", "Microsoft YaHei", sans-serif;
 }
 
 h1, h2, h3, h4, p, ul, li {
@@ -38,6 +38,15 @@ li {
   font-size: 22px;
   line-height: 1.32;
   color: var(--dn-text);
+}
+
+/* Blue bullets per Danone template spec */
+li::marker {
+  color: var(--dn-blue);
+}
+
+.blue-card li::marker {
+  color: #fff;
 }
 
 .slide {
@@ -115,7 +124,7 @@ li {
 }
 
 .tint-card {
-  background: #F4F8FC;
+  background: var(--dn-soft);
   border: 1px solid #D6E6F5;
 }
 
@@ -329,21 +338,12 @@ def plan_from_notes(title: str, scenarios: list[Scenario], showcase_flow: list[s
     for scenario in scenarios[:3]:
         plan.append(
             {
-                "intent": "two-column",
+                "intent": "three-column",
                 "content": {
-                    "title": f"{scenario.name}: {scenario.shorthand or scenario.core_message}",
-                    "left_content": "\n".join(
-                        [
-                            f"Hardware: {scenario.hardware}",
-                            compact_lines(scenario.pain_points, "待补充用户痛点", 2),
-                        ]
-                    ),
-                    "right_content": "\n".join(
-                        [
-                            compact_lines(scenario.indicators or scenario.collected_data, "待补充数据指标", 3),
-                            f"Product: {compact_lines(scenario.products, '待补充 Danone 产品', 1)}",
-                        ]
-                    ),
+                    "title": f"{scenario.name} — {trim(scenario.hardware, 80)}",
+                    "column_1": "User pain point\n" + bullet_text(scenario.pain_points, "待补充用户痛点", 4),
+                    "column_2": "Invisible data made visible\n" + bullet_text(scenario.indicators or scenario.collected_data, "待补充数据指标", 4),
+                    "column_3": "Danone product link\n" + bullet_text(scenario.products, "待补充 Danone 产品", 3),
                 },
             }
         )
