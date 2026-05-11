@@ -45,7 +45,7 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 ## Design rules
 
 ### Brand DNA (non-negotiable)
-- **Hero cover**: solid `#005EB8` with gradient overlay (not flat color)
+- **Hero cover**: Opening Slide Title format — solid `#005EB8` background, large centered white circle (`border-radius: 50%`), title in blue `#005EB8` centered inside circle, subtitle above title, DANONE logo + "One Planet. One Health" at bottom of circle
 - **Slogan**: "One Planet. One Health" must appear on cover + footer
 - **Photography-first**: every page should have photo placeholders; Danone is not text-only
 - **Multi-color themes**: match category to colorway
@@ -104,13 +104,11 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 - Page numbering `NN / TT`
 
 ### Closing page
-- Thank You slide with dark blue `#002677` background
-- Large condensed typography
-- Slogan centered
+- Closing Slide Title format — solid `#005EB8` background, large centered white circle (`border-radius: 50%`), "THANK YOU" in blue `#005EB8` centered inside circle, optional subtitle below, DANONE logo + "One Planet. One Health" at bottom of circle
 
 ## Self-check
 
-- [ ] Cover has gradient overlay + photo placeholder
+- [ ] Cover uses Opening Slide Title format (blue bg + white circle + centered blue title + DANONE logo)
 - [ ] "One Planet. One Health" appears on cover
 - [ ] Each scenario has distinct theme color (not all blue)
 - [ ] Cards have top accent bar matching theme
@@ -119,5 +117,5 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 - [ ] Quote blocks have decorative quote mark
 - [ ] Flow steps have circular arrow connectors
 - [ ] Footer has chapter color bar
-- [ ] Thank You closing page exists
+- [ ] Thank You closing page uses Closing Slide Title format (blue bg + white circle + THANK YOU + DANONE logo)
 - [ ] No decorative illustrations (Danone is photography-driven)

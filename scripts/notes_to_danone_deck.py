@@ -466,39 +466,118 @@ li::marker {
   color: var(--dn-blue-dark);
 }
 
-/* ---- Thank You / Closing ---- */
-.thankyou-slide {
-  background: var(--dn-blue-dark);
-  color: #fff;
+/* ---- Opening Slide Title (Cover) ---- */
+.opening-slide {
+  background: var(--dn-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.opening-circle {
+  width: 600px;
+  height: 600px;
+  background: #fff;
+  border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;
+  padding: 80px 100px;
   text-align: center;
-  gap: 28px;
 }
-.thankyou-slide .eyebrow {
-  color: rgba(255,255,255,0.6);
+.opening-subtitle {
+  font-size: 18px;
+  color: #1a1a1a;
+  font-weight: 400;
+  margin-bottom: 40px;
+  letter-spacing: 0.5px;
 }
-.thankyou-slide h1 {
+.opening-title {
   font-family: var(--dn-font-display);
-  font-size: 72px;
-  line-height: 1.05;
+  font-size: 48px;
   font-weight: 700;
-  color: #fff;
+  color: var(--dn-blue);
+  line-height: 1.2;
+  letter-spacing: 1px;
 }
-.thankyou-slide .slogan {
-  font-size: 20px;
+.opening-logo {
+  position: absolute;
+  bottom: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.opening-logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--dn-blue);
+  letter-spacing: 4px;
+}
+.opening-logo-sub {
+  font-size: 11px;
+  color: var(--dn-teal);
   font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.7);
+  letter-spacing: 2px;
 }
-.thankyou-slide .closing-msg {
-  font-size: 22px;
-  line-height: 1.4;
-  color: rgba(255,255,255,0.8);
-  max-width: 640px;
+
+/* ---- Closing Slide Title (Thank You) ---- */
+.closing-slide {
+  background: var(--dn-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.closing-circle {
+  width: 600px;
+  height: 600px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 80px 100px;
+  text-align: center;
+}
+.closing-title {
+  font-family: var(--dn-font-display);
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--dn-blue);
+  line-height: 1.15;
+  letter-spacing: 1px;
+}
+.closing-subtitle {
+  font-size: 20px;
+  color: var(--dn-blue);
+  font-weight: 500;
+  margin-top: 16px;
+  letter-spacing: 0.5px;
+}
+.closing-logo {
+  position: absolute;
+  bottom: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.closing-logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--dn-blue);
+  letter-spacing: 4px;
+}
+.closing-logo-sub {
+  font-size: 11px;
+  color: var(--dn-teal);
+  font-weight: 600;
+  letter-spacing: 2px;
 }
 
 /* ---- Footer ---- */
@@ -948,37 +1027,15 @@ def slide_shell(title: str, body: str, extra_css: str = "") -> str:
 
 
 def render_cover(title: str, summary: str, scenarios: list[Scenario], total: int = 7, brand_line: str = "Danone Science Lab") -> str:
-    chips = ""
-    theme_classes = ["green", "orange", "pink"]
-    chip_imgs = ["Family", "Sport", "Medical"]
-    for i, s in enumerate(scenarios[:3]):
-        cls = theme_classes[i] if i < len(theme_classes) else ""
-        img_label = chip_imgs[i] if i < len(chip_imgs) else "Photo"
-        chips += f"""<div class="chip">
-      <div style="display:flex;align-items:center;gap:16px;">
-        <div class="img-circle-sm" style="--accent:var(--dn-{cls if cls else 'blue'});--soft:var(--dn-{cls if cls else 'blue'}-soft)">
-          <span>{img_label}</span>
-        </div>
-        <div>
-          <p class="chip-label">Scenario 0{s.number}</p>
-          <p class="chip-title">{esc(s.name)}</p>
-        </div>
-      </div>
-      <p class="chip-desc">{esc(s.shorthand or s.core_message)}</p>
-    </div>"""
-
-    body = f"""<main class="slide slide-blue">
-  <div class="cover-bg"></div>
-  <div class="photo-placeholder"></div>
-  <div class="cover-content">
-    <div class="cover-left">
-      <p class="cover-slogan">One Planet. One Health</p>
-      <h1 class="cover-title">{esc(title)}</h1>
-      <p class="cover-copy">{esc(summary)}</p>
+    body = f"""<main class="slide opening-slide">
+  <div class="opening-circle">
+    <p class="opening-subtitle">{esc(brand_line)}</p>
+    <h1 class="opening-title">{esc(title)}</h1>
+    <div class="opening-logo">
+      <p class="opening-logo-text">DANONE</p>
+      <p class="opening-logo-sub">ONE PLANET. ONE HEALTH</p>
     </div>
-    <div class="cover-right">{chips}</div>
   </div>
-  <div class="footer"><p>{esc(brand_line)}</p><p>01 / {total:02d}</p></div>
 </main>"""
     return slide_shell("01 Cover", body)
 
@@ -1114,12 +1171,15 @@ def render_flow(showcase_flow: list[str], summary: str, index: int = 6, total: i
 
 
 def render_thankyou(summary: str, index: int = 7, total: int = 7, brand_line: str = "Danone Science Lab") -> str:
-    body = f"""<main class="slide thankyou-slide">
-  <p class="eyebrow">Danone Science Lab</p>
-  <h1>Thank You</h1>
-  <p class="slogan">One Planet. One Health</p>
-  <p class="closing-msg">{esc(summary)}</p>
-  <div class="footer"><p>{esc(brand_line)}</p><p>{index:02d} / {total:02d}</p></div>
+    body = f"""<main class="slide closing-slide">
+  <div class="closing-circle">
+    <h1 class="closing-title">THANK YOU</h1>
+    <p class="closing-subtitle">{esc(summary)}</p>
+    <div class="closing-logo">
+      <p class="closing-logo-text">DANONE</p>
+      <p class="closing-logo-sub">ONE PLANET. ONE HEALTH</p>
+    </div>
+  </div>
 </main>"""
     return slide_shell("07 Thank You", body)
 
