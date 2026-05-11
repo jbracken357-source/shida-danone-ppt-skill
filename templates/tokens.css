@@ -1,14 +1,35 @@
 /* Danone Design System Tokens */
-/* Blue-White Colorway Only — derived from Standard Danone Template */
+/* Multi-colorway — derived from Standard Danone Template */
 
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  /* Core blue palette (from template theme accent1 / dk2) */
+  /* Core blue palette (brand primary) */
   --dn-blue: #005EB8;
   --dn-blue-mid: #0068CC;
   --dn-blue-dark: #002677;
   --dn-blue-light: #00ACED;
+
+  /* Multi-category accent colors (from real template) */
+  --dn-green: #00A651;
+  --dn-green-soft: #E6F7EF;
+  --dn-green-dark: #007A3D;
+
+  --dn-orange: #F26522;
+  --dn-orange-soft: #FEF0E8;
+  --dn-orange-dark: #C44A14;
+
+  --dn-pink: #E6007E;
+  --dn-pink-soft: #FCE6F2;
+  --dn-pink-dark: #B30063;
+
+  --dn-yellow: #FFC72C;
+  --dn-yellow-soft: #FFF8E1;
+  --dn-yellow-dark: #CC9E1F;
+
+  --dn-teal: #00B2A9;
+  --dn-teal-soft: #E6F8F7;
+  --dn-teal-dark: #008A82;
 
   /* Neutral & tints */
   --dn-tint: #CCDFF1;
@@ -18,8 +39,11 @@
   --dn-border: rgba(0,0,0,0.15);
 
   /* Fonts: template uses Danone One Condensed / Danone One Light */
-  --dn-font: "Danone One Light", "Arial", sans-serif;
-  --dn-font-display: "Danone One Condensed", "Arial", sans-serif;
+  --dn-font: "Danone One Light", "Arial Narrow", "Arial", sans-serif;
+  --dn-font-display: "Danone One Condensed", "Arial Narrow", "Arial", sans-serif;
+
+  /* Brand slogan */
+  --dn-slogan: "One Planet. One Health";
 }
 
 body {

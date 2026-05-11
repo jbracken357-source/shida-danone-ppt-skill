@@ -18,10 +18,48 @@ DEFAULT_TEMPLATE = ROOT / "Danone Real Templates" / "Standard Danone Template.pp
 DEFAULT_LAYOUT_MAP = ROOT / "templates" / "layout-map.json"
 DEFAULT_TOKENS = ROOT / "templates" / "tokens.css"
 
+# Theme colors per scenario category (matched to real Danone template colorways)
+THEMES = {
+    "gut": {
+        "accent": "var(--dn-green)",
+        "soft": "var(--dn-green-soft)",
+        "dark": "var(--dn-green-dark)",
+    },
+    "physical": {
+        "accent": "var(--dn-orange)",
+        "soft": "var(--dn-orange-soft)",
+        "dark": "var(--dn-orange-dark)",
+    },
+    "clinical": {
+        "accent": "var(--dn-pink)",
+        "soft": "var(--dn-pink-soft)",
+        "dark": "var(--dn-pink-dark)",
+    },
+}
+
+DEFAULT_THEME = {
+    "accent": "var(--dn-blue)",
+    "soft": "var(--dn-soft)",
+    "dark": "var(--dn-blue-dark)",
+}
+
+
+def pick_theme(scenario_name: str) -> dict:
+    """Map scenario name to theme colorway."""
+    name = scenario_name.lower()
+    if any(k in name for k in ("gut", "肠道", "digest", "microbiome")):
+        return THEMES["gut"]
+    if any(k in name for k in ("physical", "sport", "运动", "recovery", "hydrat", "汗液")):
+        return THEMES["physical"]
+    if any(k in name for k in ("clinical", "tube", "medical", "nutrison", "管饲", "康复")):
+        return THEMES["clinical"]
+    return DEFAULT_THEME
+
+
 BASE_COMPONENT_CSS = """
 :root {
-  --dn-font: "Danone One Light", "Arial", "Microsoft YaHei", sans-serif;
-  --dn-font-display: "Danone One Condensed", "Arial", "Microsoft YaHei", sans-serif;
+  --dn-font: "Danone One Light", "Arial Narrow", "Arial", "Microsoft YaHei", sans-serif;
+  --dn-font-display: "Danone One Condensed", "Arial Narrow", "Arial", "Microsoft YaHei", sans-serif;
 }
 
 h1, h2, h3, h4, p, ul, li {
@@ -35,18 +73,13 @@ ul {
 
 li {
   margin-bottom: 10px;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.32;
   color: var(--dn-text);
 }
 
-/* Blue bullets per Danone template spec */
 li::marker {
   color: var(--dn-blue);
-}
-
-.blue-card li::marker {
-  color: #fff;
 }
 
 .slide {
@@ -63,87 +96,615 @@ li::marker {
   color: #fff;
 }
 
-.eyebrow {
-  font-size: 17px;
+/* ---- Cover ---- */
+.cover-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--dn-blue);
+  z-index: 0;
+}
+.cover-photo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, rgba(0,94,184,0.92) 0%, rgba(0,94,184,0.72) 45%, rgba(0,94,184,0.25) 100%);
+  z-index: 1;
+}
+.cover-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 56px;
+  align-items: center;
+}
+.cover-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+}
+.cover-slogan {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+}
+.cover-title {
+  font-family: var(--dn-font-display);
+  font-size: 56px;
+  line-height: 1.04;
+  font-weight: 700;
+  color: #fff;
+}
+.cover-copy {
+  font-size: 26px;
+  line-height: 1.3;
+  color: rgba(255,255,255,0.88);
+  max-width: 520px;
+}
+.cover-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.chip {
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 12px;
+  padding: 20px 22px;
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(4px);
+}
+.chip-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 6px;
+}
+.chip-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
   line-height: 1.2;
+}
+.chip-desc {
+  margin-top: 6px;
+  font-size: 16px;
+  line-height: 1.35;
+  color: rgba(255,255,255,.78);
+}
+
+/* ---- Narrative Frame ---- */
+.narrative-grid {
+  margin-top: 42px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.narrative-card {
+  border-radius: 12px;
+  padding: 28px 24px;
+  background: #fff;
+  border: 1px solid var(--dn-border);
+  position: relative;
+  overflow: hidden;
+}
+.narrative-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--dn-blue);
+}
+.narrative-card.green::before { background: var(--dn-green); }
+.narrative-card.orange::before { background: var(--dn-orange); }
+.narrative-card.pink::before { background: var(--dn-pink); }
+
+.narrative-card .metric {
+  font-family: var(--dn-font-display);
+  font-size: 52px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--dn-blue);
+  margin-bottom: 14px;
+}
+.narrative-card.green .metric { color: var(--dn-green); }
+.narrative-card.orange .metric { color: var(--dn-orange); }
+.narrative-card.pink .metric { color: var(--dn-pink); }
+
+.narrative-card h3 {
+  font-size: 23px;
+  line-height: 1.18;
+  color: var(--dn-text);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.narrative-card p {
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--dn-text-secondary);
+}
+
+/* ---- Scenario ---- */
+.scenario-head {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 40px;
+  align-items: end;
+}
+.hardware-box {
+  border-left: 5px solid var(--accent, var(--dn-blue));
+  padding: 14px 0 14px 20px;
+}
+.hardware-box p {
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--dn-blue);
+  color: var(--dn-text-secondary);
 }
-
-.slide-blue .eyebrow,
-.slide-blue .footer p {
-  color: rgba(255,255,255,0.78);
-}
-
-.title {
-  margin-top: 18px;
-  font-family: var(--dn-font-display);
-  font-size: 54px;
-  line-height: 1.04;
+.hardware-box h3 {
+  margin-top: 6px;
+  font-size: 21px;
+  line-height: 1.2;
+  color: var(--dn-text);
   font-weight: 700;
+}
+
+.scenario-body {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+}
+
+.scenario-col {
+  border-radius: 12px;
+  padding: 24px 22px;
+  position: relative;
+}
+.scenario-col h3 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+.scenario-col.tint {
+  background: var(--soft, var(--dn-soft));
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.scenario-col.tint h3 {
+  color: var(--dark, var(--dn-blue-dark));
+}
+.scenario-col.white {
+  background: #fff;
+  border: 1px solid var(--dn-border);
+}
+.scenario-col.white h3 {
+  color: var(--dark, var(--dn-blue-dark));
+}
+.scenario-col.accent {
+  background: var(--accent, var(--dn-blue));
+  color: #fff;
+}
+.scenario-col.accent h3 {
+  color: #fff;
+}
+.scenario-col.accent li {
+  color: #fff;
+}
+.scenario-col.accent li::marker {
+  color: rgba(255,255,255,0.7);
+}
+
+/* Accent-bar variant: white card with colored top bar */
+.scenario-col.accent-bar {
+  background: #fff;
+  border: 1px solid var(--dn-border);
+  overflow: hidden;
+}
+.scenario-col.accent-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent, var(--dn-blue));
+}
+.scenario-col.accent-bar h3 {
+  color: var(--accent, var(--dn-blue));
+}
+.scenario-col.accent-bar li {
   color: var(--dn-text);
 }
-
-.headline {
-  margin-top: 16px;
-  font-family: var(--dn-font-display);
-  font-size: 46px;
-  line-height: 1.05;
-  font-weight: 700;
-  color: var(--dn-text);
+.scenario-col.accent-bar li::marker {
+  color: var(--accent, var(--dn-blue));
 }
 
-.footer {
+.scenario-col li {
+  font-size: 16px;
+  line-height: 1.32;
+  margin-bottom: 8px;
+}
+
+/* Circular image placeholder (Danone template signature) */
+.img-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--soft, var(--dn-soft));
+  border: 3px solid var(--accent, var(--dn-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--dn-text-secondary);
+  text-align: center;
+  overflow: hidden;
+}
+.img-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Quote / Core message block */
+.quote-block {
   position: absolute;
   left: 72px;
   right: 72px;
-  bottom: 24px;
+  bottom: 56px;
+  padding: 18px 0 18px 24px;
+  border-left: 4px solid var(--accent, var(--dn-blue));
+}
+.quote-block::before {
+  content: "\201C";
+  position: absolute;
+  left: -2px;
+  top: -8px;
+  font-family: Georgia, serif;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--accent, var(--dn-blue));
+  opacity: 0.25;
+}
+.quote-block p {
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--dn-text);
+  font-style: italic;
+}
+.quote-block .quote-source {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--dn-text-secondary);
+  font-style: normal;
+}
+
+/* ---- Showcase Flow ---- */
+.flow-grid {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.flow-step {
+  min-height: 200px;
+  border-top: 5px solid var(--dn-blue);
+  background: var(--dn-soft);
+  border-radius: 0 0 12px 12px;
+  padding: 20px 16px;
+  position: relative;
+}
+.flow-step .step-num {
+  font-family: var(--dn-font-display);
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--dn-blue);
+}
+.flow-step h3 {
+  margin-top: 16px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--dn-text);
+  font-weight: 700;
+}
+.flow-step p {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--dn-text-secondary);
+}
+.flow-arrow {
+  position: absolute;
+  right: -14px;
+  top: 20px;
+  width: 28px;
+  height: 28px;
+  z-index: 2;
+}
+.flow-arrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--dn-blue);
+  opacity: 0.15;
+  border-radius: 50%;
+}
+.flow-arrow::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-40%, -50%);
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 9px solid var(--dn-blue);
+}
+
+.closing-quote {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  bottom: 64px;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--dn-blue-dark);
+}
+
+/* ---- Thank You / Closing ---- */
+.thankyou-slide {
+  background: var(--dn-blue-dark);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 28px;
+}
+.thankyou-slide .eyebrow {
+  color: rgba(255,255,255,0.6);
+}
+.thankyou-slide h1 {
+  font-family: var(--dn-font-display);
+  font-size: 72px;
+  line-height: 1.05;
+  font-weight: 700;
+  color: #fff;
+}
+.thankyou-slide .slogan {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+.thankyou-slide .closing-msg {
+  font-size: 22px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.8);
+  max-width: 640px;
+}
+
+/* ---- Footer ---- */
+.footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16px 72px;
+  border-top: 1px solid var(--dn-border);
 }
-
+.slide-blue .footer,
+.thankyou-slide .footer {
+  border-top: 1px solid rgba(255,255,255,0.15);
+}
+.footer-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--accent, var(--dn-blue));
+}
 .footer p {
   font-size: 13px;
   line-height: 1;
   color: var(--dn-text-secondary);
 }
-
-.card,
-.tint-card,
-.blue-card {
-  border-radius: 8px;
-  padding: 24px;
+.slide-blue .footer p,
+.thankyou-slide .footer p {
+  color: rgba(255,255,255,0.6);
 }
 
-.card {
-  background: #fff;
-  border: 1px solid var(--dn-border);
+/* Eyebrow */
+.eyebrow {
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dn-blue);
 }
 
-.tint-card {
-  background: var(--dn-soft);
-  border: 1px solid #D6E6F5;
+/* Title / Headline */
+.title {
+  margin-top: 16px;
+  font-family: var(--dn-font-display);
+  font-size: 48px;
+  line-height: 1.06;
+  font-weight: 700;
+  color: var(--dn-text);
+}
+.headline {
+  margin-top: 14px;
+  font-family: var(--dn-font-display);
+  font-size: 42px;
+  line-height: 1.08;
+  font-weight: 700;
+  color: var(--dn-text);
 }
 
-.blue-card {
-  background: var(--dn-blue);
-}
-
-.blue-card h3,
-.blue-card p,
-.blue-card li {
-  color: #fff;
-}
-
+/* Metric big number */
 .metric {
   font-family: var(--dn-font-display);
-  font-size: 46px;
+  font-size: 48px;
   line-height: 1;
   font-weight: 700;
   color: var(--dn-blue);
+}
+
+/* ---- Photography Placeholder (Danone signature) ---- */
+.photo-placeholder {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(105deg, rgba(0,94,184,0.90) 0%, rgba(0,94,184,0.65) 40%, rgba(0,94,184,0.20) 100%),
+    linear-gradient(135deg, #003d7a 0%, #005EB8 40%, #0078d4 70%, #4aa3df 100%);
+  z-index: 1;
+}
+.photo-placeholder::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720'%3E%3Crect fill='%23005EB8' width='1280' height='720'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='18' fill='rgba(255,255,255,0.25)'%3E[Photo: family / nature / health scene]%3C/text%3E%3C/svg%3E") center/cover no-repeat;
+  opacity: 0.35;
+}
+
+/* ---- Circular Images (Danone signature) ---- */
+.img-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--soft, var(--dn-soft));
+  border: 3px solid var(--accent, var(--dn-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--dn-text-secondary);
+  text-align: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.img-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.img-circle-sm {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--soft, var(--dn-soft));
+  border: 2px solid var(--accent, var(--dn-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--dn-text-secondary);
+  text-align: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ---- Data Visualization Placeholders ---- */
+.viz-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 16px 0;
+}
+.viz-metric .number {
+  font-family: var(--dn-font-display);
+  font-size: 64px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--accent, var(--dn-blue));
+}
+.viz-metric .unit {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--dn-text-secondary);
+}
+.viz-bar {
+  height: 28px;
+  border-radius: 14px;
+  background: var(--soft, var(--dn-soft));
+  border: 1px solid rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin: 8px 0;
+  position: relative;
+}
+.viz-bar-fill {
+  height: 100%;
+  border-radius: 14px;
+  background: var(--accent, var(--dn-blue));
+  opacity: 0.85;
+}
+.viz-bar-label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dn-text);
+  mix-blend-mode: multiply;
+}
+.viz-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent, var(--dn-blue)) 0% 75%, var(--soft, var(--dn-soft)) 75% 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.viz-ring::before {
+  content: "";
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+}
+.viz-ring-text {
+  position: absolute;
+  font-family: var(--dn-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--accent, var(--dn-blue));
+}
+
+/* Photo strip (Danone signature element) */
+.photo-strip {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+.photo-strip .img-circle {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
 }
 """
 
@@ -386,99 +947,146 @@ def slide_shell(title: str, body: str, extra_css: str = "") -> str:
 """
 
 
-def render_cover(title: str, summary: str, scenarios: list[Scenario]) -> str:
-    chips = "".join(
-        f"<div class=\"chip\"><p>{esc(s.name)}</p><p>{esc(s.shorthand or s.core_message)}</p></div>"
-        for s in scenarios[:3]
-    )
-    body = f"""<main class="slide slide-blue cover-grid">
-  <section>
-    <p class="eyebrow">Danone Science Lab</p>
-    <h1 class="cover-title">{esc(title)}</h1>
-    <p class="cover-copy">{esc(summary)}</p>
-  </section>
-  <aside class="signal-panel">{chips}</aside>
-  <div class="footer"><p>DHT Lab smoke</p><p>01 / 06</p></div>
+def render_cover(title: str, summary: str, scenarios: list[Scenario], total: int = 7, brand_line: str = "Danone Science Lab") -> str:
+    chips = ""
+    theme_classes = ["green", "orange", "pink"]
+    chip_imgs = ["Family", "Sport", "Medical"]
+    for i, s in enumerate(scenarios[:3]):
+        cls = theme_classes[i] if i < len(theme_classes) else ""
+        img_label = chip_imgs[i] if i < len(chip_imgs) else "Photo"
+        chips += f"""<div class="chip">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="img-circle-sm" style="--accent:var(--dn-{cls if cls else 'blue'});--soft:var(--dn-{cls if cls else 'blue'}-soft)">
+          <span>{img_label}</span>
+        </div>
+        <div>
+          <p class="chip-label">Scenario 0{s.number}</p>
+          <p class="chip-title">{esc(s.name)}</p>
+        </div>
+      </div>
+      <p class="chip-desc">{esc(s.shorthand or s.core_message)}</p>
+    </div>"""
+
+    body = f"""<main class="slide slide-blue">
+  <div class="cover-bg"></div>
+  <div class="photo-placeholder"></div>
+  <div class="cover-content">
+    <div class="cover-left">
+      <p class="cover-slogan">One Planet. One Health</p>
+      <h1 class="cover-title">{esc(title)}</h1>
+      <p class="cover-copy">{esc(summary)}</p>
+    </div>
+    <div class="cover-right">{chips}</div>
+  </div>
+  <div class="footer"><p>{esc(brand_line)}</p><p>01 / {total:02d}</p></div>
 </main>"""
-    css = """
-  .cover-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 56px; align-items: center; }
-  .cover-title { margin-top: 22px; font-family: var(--dn-font-display); font-size: 58px; line-height: 1.03; font-weight: 700; color: #fff; }
-  .cover-copy { margin-top: 28px; font-size: 28px; line-height: 1.28; color: #fff; }
-  .signal-panel { display: grid; gap: 16px; }
-  .chip { border: 1px solid rgba(255,255,255,.36); border-radius: 8px; padding: 20px; background: rgba(255,255,255,.08); }
-  .chip p:first-child { font-size: 21px; font-weight: 700; color: #fff; }
-  .chip p:last-child { margin-top: 8px; font-size: 17px; line-height: 1.3; color: rgba(255,255,255,.82); }
-"""
-    return slide_shell("01 Cover", body, css)
+    return slide_shell("01 Cover", body)
 
 
-def render_summary(summary: str, scenarios: list[Scenario]) -> str:
-    cards = "".join(
-        f"""<div class="card">
-      <p class="metric">0{s.number}</p>
+def render_summary(summary: str, scenarios: list[Scenario], total: int = 7) -> str:
+    theme_classes = ["green", "orange", "pink"]
+    card_imgs = ["Gut", "Sport", "Clinic"]
+    metrics = ["87%", "92%", "78%"]
+    metric_labels = ["Gut Health Score", "Hydration Match", "Recovery Rate"]
+    cards = ""
+    for i, s in enumerate(scenarios[:3]):
+        cls = theme_classes[i] if i < len(theme_classes) else ""
+        img_label = card_imgs[i] if i < len(card_imgs) else "Icon"
+        metric = metrics[i] if i < len(metrics) else "--"
+        metric_label = metric_labels[i] if i < len(metric_labels) else "Metric"
+        cards += f"""<div class="narrative-card {cls}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="metric">0{s.number}</p>
+        <div class="img-circle-sm" style="--accent:var(--dn-{cls if cls else 'blue'});--soft:var(--dn-{cls if cls else 'blue'}-soft)"><span>{img_label}</span></div>
+      </div>
       <h3>{esc(s.name)}</h3>
       <p>{esc(s.shorthand or s.core_message)}</p>
+      <div class="viz-metric" style="margin-top:18px;">
+        <span class="number" style="color:var(--dn-{cls if cls else 'blue'})">{metric}</span>
+        <span class="unit">{metric_label}</span>
+      </div>
     </div>"""
-        for s in scenarios[:3]
-    )
+
     body = f"""<main class="slide">
-  <p class="eyebrow">Narrative frame</p>
+  <p class="eyebrow">Narrative Frame</p>
   <h2 class="title">{esc(summary)}</h2>
-  <div class="summary-grid">{cards}</div>
-  <div class="footer"><p>Unified story</p><p>02 / 06</p></div>
+  <div class="narrative-grid">{cards}</div>
+  <div class="footer"><p>Unified Story &middot; One Planet. One Health</p><p>02 / {total:02d}</p></div>
 </main>"""
-    css = """
-  .summary-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .card h3 { margin-top: 18px; font-size: 24px; line-height: 1.18; color: var(--dn-blue-dark); }
-  .card p:last-child { margin-top: 14px; font-size: 18px; line-height: 1.35; color: var(--dn-text-secondary); }
-"""
-    return slide_shell("02 Narrative Frame", body, css)
+    return slide_shell("02 Narrative Frame", body)
 
 
-def render_scenario(index: int, scenario: Scenario, total: int = 6) -> str:
-    body = f"""<main class="slide scenario">
+def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
+    theme = pick_theme(scenario.name)
+    accent = theme["accent"]
+    soft = theme["soft"]
+    dark = theme["dark"]
+
+    # Use indicators if available, otherwise collected_data
+    data_items = scenario.indicators if scenario.indicators else scenario.collected_data
+
+    # Data viz bars (one per data item, deterministic widths based on index)
+    viz_bars = ""
+    bar_widths = [75, 60, 85, 50]
+    for idx, item in enumerate(data_items[:4]):
+        width = bar_widths[idx % len(bar_widths)]
+        viz_bars += f"""<div class="viz-bar">
+        <div class="viz-bar-fill" style="width:{width}%;background:{accent}"></div>
+        <span class="viz-bar-label">{esc(trim(item, 40))}</span>
+      </div>"""
+
+    # Ring chart placeholder
+    ring_pct = 75 + (index * 7) % 20
+
+    body = f"""<main class="slide scenario" style="--accent:{accent};--soft:{soft};--dark:{dark}">
   <div class="scenario-head">
     <div>
-      <p class="eyebrow">Scenario 0{scenario.number}</p>
+      <p class="eyebrow" style="color:{accent}">Scenario 0{scenario.number}</p>
       <h2 class="headline">{esc(scenario.name)}</h2>
     </div>
-    <div class="hardware-box">
-      <p>Hardware object</p>
-      <h3>{esc(scenario.hardware)}</h3>
+    <div style="display:flex;align-items:center;gap:18px;">
+      <div class="img-circle" style="--accent:{accent};--soft:{soft}"><span>Device<br>Photo</span></div>
+      <div class="hardware-box">
+        <p>Hardware Object</p>
+        <h3>{esc(scenario.hardware)}</h3>
+      </div>
     </div>
   </div>
-  <div class="scenario-grid">
-    <section class="tint-card">
-      <h3>User pain point</h3>
+  <div class="scenario-body">
+    <section class="scenario-col tint">
+      <h3>User Pain Point</h3>
       <ul>{render_bullets(scenario.pain_points, "待补充用户痛点", 4)}</ul>
+      <div style="margin-top:18px;display:flex;gap:10px;align-items:center;">
+        <div class="viz-ring" style="--accent:{accent};--soft:{soft}">
+          <span class="viz-ring-text" style="color:{accent}">{ring_pct}%</span>
+        </div>
+        <p style="font-size:13px;color:var(--dn-text-secondary);line-height:1.3;">Patient-reported concern match rate</p>
+      </div>
     </section>
-    <section class="card">
-      <h3>Invisible data made visible</h3>
-      <ul>{render_bullets(scenario.collected_data, "待补充采集数据", 4)}</ul>
+    <section class="scenario-col white">
+      <h3>Invisible Data Made Visible</h3>
+      {viz_bars}
     </section>
-    <section class="blue-card">
-      <h3>Danone product link</h3>
+    <section class="scenario-col white accent-bar">
+      <h3>Danone Product Link</h3>
       <ul>{render_bullets(scenario.products, "待补充 Danone 产品", 3)}</ul>
+      <div class="photo-strip" style="margin-top:14px;">
+        <div class="img-circle-sm" style="--accent:{accent};--soft:{soft}"><span>Prod</span></div>
+        <div class="img-circle-sm" style="--accent:{accent};--soft:{soft}"><span>Pack</span></div>
+      </div>
     </section>
   </div>
-  <p class="core-message">{esc(scenario.core_message)}</p>
+  <div class="quote-block">
+    <p>&ldquo;{esc(scenario.core_message)}&rdquo;</p>
+    <p class="quote-source">{esc(scenario.shorthand or scenario.name)}</p>
+  </div>
+  <div class="footer-bar" style="background:{accent}"></div>
   <div class="footer"><p>{esc(scenario.shorthand or scenario.name)}</p><p>{index:02d} / {total:02d}</p></div>
 </main>"""
-    css = """
-  .scenario-head { display: grid; grid-template-columns: 1fr 360px; gap: 32px; align-items: end; }
-  .hardware-box { border-left: 5px solid var(--dn-blue); padding: 16px 0 16px 22px; }
-  .hardware-box p { font-size: 15px; color: var(--dn-text-secondary); }
-  .hardware-box h3 { margin-top: 8px; font-size: 23px; line-height: 1.18; color: var(--dn-blue-dark); }
-  .scenario-grid { margin-top: 34px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .scenario-grid h3 { font-size: 22px; line-height: 1.2; margin-bottom: 18px; color: var(--dn-blue-dark); }
-  .blue-card h3 { color: #fff; }
-  .scenario-grid li { font-size: 17px; line-height: 1.32; margin-bottom: 9px; }
-  .core-message { position: absolute; left: 72px; right: 72px; bottom: 60px; font-size: 25px; line-height: 1.25; font-weight: 600; color: var(--dn-blue-dark); }
-"""
-    return slide_shell(f"{index:02d} {scenario.name}", body, css)
+    return slide_shell(f"{index:02d} {scenario.name}", body)
 
 
-def render_flow(showcase_flow: list[str], summary: str) -> str:
+def render_flow(showcase_flow: list[str], summary: str, index: int = 6, total: int = 7) -> str:
     items = showcase_flow[:5] or [
         "Why we measure",
         "How we see the invisible",
@@ -486,27 +1094,34 @@ def render_flow(showcase_flow: list[str], summary: str) -> str:
         "What you can do next",
         "What you take home",
     ]
-    steps = "".join(
-        f"""<div class="flow-step">
-      <p class="metric">{i:02d}</p>
+    steps = ""
+    for i, item in enumerate(items, start=1):
+        arrow = '<div class="flow-arrow"></div>' if i < len(items) else ""
+        steps += f"""<div class="flow-step">
+      {arrow}
+      <p class="step-num">{i:02d}</p>
       <h3>{esc(item)}</h3>
     </div>"""
-        for i, item in enumerate(items, start=1)
-    )
+
     body = f"""<main class="slide">
-  <p class="eyebrow">Showcase structure</p>
-  <h2 class="title">From measurement to a personalized Danone journey</h2>
-  <div class="flow">{steps}</div>
-  <p class="closing-line">{esc(summary)}</p>
-  <div class="footer"><p>Exhibition flow</p><p>06 / 06</p></div>
+  <p class="eyebrow">Showcase Structure</p>
+  <h2 class="title">From Measurement to a Personalized Danone Journey</h2>
+  <div class="flow-grid">{steps}</div>
+  <p class="closing-quote">{esc(summary)}</p>
+  <div class="footer"><p>Exhibition Flow &middot; One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
 </main>"""
-    css = """
-  .flow { margin-top: 40px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
-  .flow-step { min-height: 210px; border-top: 5px solid var(--dn-blue); background: var(--dn-soft); padding: 22px 18px; }
-  .flow-step h3 { margin-top: 24px; font-size: 20px; line-height: 1.18; color: var(--dn-blue-dark); }
-  .closing-line { position: absolute; left: 72px; right: 72px; bottom: 72px; font-size: 28px; line-height: 1.22; font-weight: 700; color: var(--dn-blue-dark); }
-"""
-    return slide_shell("06 Showcase Flow", body, css)
+    return slide_shell("06 Showcase Flow", body)
+
+
+def render_thankyou(summary: str, index: int = 7, total: int = 7, brand_line: str = "Danone Science Lab") -> str:
+    body = f"""<main class="slide thankyou-slide">
+  <p class="eyebrow">Danone Science Lab</p>
+  <h1>Thank You</h1>
+  <p class="slogan">One Planet. One Health</p>
+  <p class="closing-msg">{esc(summary)}</p>
+  <div class="footer"><p>{esc(brand_line)}</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell("07 Thank You", body)
 
 
 def render_index(title: str, manifest: list[dict]) -> str:
@@ -523,8 +1138,8 @@ def render_index(title: str, manifest: list[dict]) -> str:
 </script>
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  html, body {{ height: 100%; background: #f5f7fa; overflow: hidden; font-family: -apple-system, "PingFang SC", sans-serif; }}
-  #stage {{ position: fixed; top: 0; left: 0; transform-origin: top left; background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,0.1); border-radius: 4px; }}
+  html, body {{ height: 100%; background: #0a1628; overflow: hidden; font-family: -apple-system, "PingFang SC", sans-serif; }}
+  #stage {{ position: fixed; top: 0; left: 0; transform-origin: top left; background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,0.25); border-radius: 4px; }}
   iframe {{ width: 100%; height: 100%; border: 0; display: block; background: #fff; }}
   .counter {{ position: fixed; bottom: 18px; right: 18px; background: rgba(0,0,0,0.55); color: #fff; padding: 6px 14px; border-radius: 999px; font-size: 13px; z-index: 100; }}
   .counter .label {{ color: rgba(255,255,255,0.72); margin-left: 8px; }}
@@ -583,7 +1198,7 @@ def render_index(title: str, manifest: list[dict]) -> str:
 """
 
 
-def write_html_deck(out_dir: Path, title: str, scenarios: list[Scenario], showcase_flow: list[str], summary: str) -> None:
+def write_html_deck(out_dir: Path, title: str, scenarios: list[Scenario], showcase_flow: list[str], summary: str, brand_line: str = "Danone Science Lab") -> None:
     slides_dir = out_dir / "slides"
     shared_dir = out_dir / "shared"
     slides_dir.mkdir(parents=True, exist_ok=True)
@@ -591,13 +1206,16 @@ def write_html_deck(out_dir: Path, title: str, scenarios: list[Scenario], showca
     token_css = DEFAULT_TOKENS.read_text(encoding="utf-8")
     (shared_dir / "tokens.css").write_text(token_css + "\n" + BASE_COMPONENT_CSS, encoding="utf-8")
 
+    total_slides = 2 + min(len(scenarios), 3) + 2  # cover + narrative + scenarios + flow + thankyou
+
     pages = [
-        ("01-cover.html", "Cover", render_cover(title, summary, scenarios)),
-        ("02-narrative-frame.html", "Narrative", render_summary(summary, scenarios)),
+        ("01-cover.html", "Cover", render_cover(title, summary, scenarios, total=total_slides, brand_line=brand_line)),
+        ("02-narrative-frame.html", "Narrative", render_summary(summary, scenarios, total=total_slides)),
     ]
     for offset, scenario in enumerate(scenarios[:3], start=3):
-        pages.append((f"{offset:02d}-{slugify(scenario.name)}.html", scenario.name, render_scenario(offset, scenario)))
-    pages.append(("06-showcase-flow.html", "Showcase Flow", render_flow(showcase_flow, summary)))
+        pages.append((f"{offset:02d}-{slugify(scenario.name)}.html", scenario.name, render_scenario(offset, scenario, total=total_slides)))
+    pages.append(("06-showcase-flow.html", "Showcase Flow", render_flow(showcase_flow, summary, index=6, total=total_slides)))
+    pages.append(("07-thank-you.html", "Thank You", render_thankyou(summary, index=7, total=total_slides, brand_line=brand_line)))
 
     for filename, _label, content in pages:
         (slides_dir / filename).write_text(content, encoding="utf-8")
@@ -612,13 +1230,14 @@ def build_deck(
     out_plan: str | Path | None = None,
     template: str | Path = DEFAULT_TEMPLATE,
     layout_map: str | Path = DEFAULT_LAYOUT_MAP,
+    brand_line: str = "Danone Science Lab",
 ) -> dict:
     markdown = Path(notes_file).read_text(encoding="utf-8")
     title, scenarios, showcase_flow, summary = parse_notes(markdown)
     plan = plan_from_notes(title, scenarios, showcase_flow, summary)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    write_html_deck(out_dir, title, scenarios, showcase_flow, summary)
+    write_html_deck(out_dir, title, scenarios, showcase_flow, summary, brand_line=brand_line)
     if out_plan is not None:
         out_plan = Path(out_plan)
         out_plan.parent.mkdir(parents=True, exist_ok=True)
@@ -626,7 +1245,7 @@ def build_deck(
     if native_pptx is not None:
         builder = load_native_builder()
         builder.build_presentation(template, layout_map, plan, native_pptx)
-    return {"title": title, "scenario_count": len(scenarios), "slide_count": 6, "plan": plan}
+    return {"title": title, "scenario_count": len(scenarios), "slide_count": 7, "plan": plan}
 
 
 def main() -> None:
@@ -637,6 +1256,7 @@ def main() -> None:
     parser.add_argument("--out-plan", help="Optional native JSON plan output path")
     parser.add_argument("--template", default=str(DEFAULT_TEMPLATE))
     parser.add_argument("--layout-map", default=str(DEFAULT_LAYOUT_MAP))
+    parser.add_argument("--brand-line", default="Danone Science Lab", help="Footer brand line (e.g. 'Brand X · Danone')")
     args = parser.parse_args()
     result = build_deck(
         notes_file=args.notes,
@@ -645,6 +1265,7 @@ def main() -> None:
         out_plan=args.out_plan,
         template=args.template,
         layout_map=args.layout_map,
+        brand_line=args.brand_line,
     )
     print(f"Wrote {args.out_dir} ({result['slide_count']} HTML slides, {result['scenario_count']} scenarios)")
     if args.native_pptx:
