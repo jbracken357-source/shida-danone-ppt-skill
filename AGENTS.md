@@ -139,12 +139,75 @@ Input (brief / notes)
 
 ---
 
+## Known Issues / 已知问题
+
+> 详见 `ROADMAP.md` 的完整分析和优化计划。
+
+### P0 — HTML Deck 视觉效果
+- 字体使用 Arial Narrow fallback，廉价且无品牌感
+- 布局单调，只有 5 种对称卡片模式
+- 图片占位符像 wireframe，不像 editorial layout
+- Flat 纯色，无 gradient/shadow/视觉深度
+- 所有页都是 light 主题，没有 dark 页制造呼吸
+
+### P0 — Native PPTX 功能
+- 输出文件 15-20MB：复制了整个模板（649 文件），未清理未使用资源
+- `contents` intent 内容映射 broken（查找 idx=1/2，实际用 idx=16,22-25）
+- `three-column` intent 内容映射 broken（查找 idx=1,2,14，实际用 idx=21-26）
+- slide number 显示原始模板页码而非输出页码
+- 悬空图片引用（移除 pic 未清理 rels）
+- `image-content` / `section-photo` intents 未实现
+
+---
+
 ## Development Workflow / 开发流程
+
+### 每日开工 checklist（明天开始用）
+
+1. **依赖检查**
+   ```bash
+   node --version  # 18+
+   python --version  # 3.10+
+   npm list playwright pdf-lib pptxgenjs sharp 2>/dev/null || npm install
+   ```
+
+2. **读取 Roadmap**
+   ```bash
+   cat ROADMAP.md  # 确认当天要修的问题
+   ```
+
+3. **修改 → 生成 → 验证**
+   ```bash
+   # Step 1: 生成测试 deck
+   python scripts/notes_to_danone_deck.py \
+     --notes smoke-tests/dht-lab-notes/Slide\ notes.md \
+     --out-dir /tmp/test-html --brand-line "DHT Lab · Danone"
+
+   python scripts/brief_to_native_deck.py \
+     --title "Test" --brief-file smoke-tests/brief-native/brief.md \
+     --slides 6 --out /tmp/test-native.pptx
+
+   # Step 2: HTML 视觉验证（打开浏览器）
+   # 检查：字体加载、主题节奏、图片占位符、视觉深度
+
+   # Step 3: Native PPTX 功能验证
+   ls -lh /tmp/test-native.pptx        # 期望 < 5MB
+   python -c "import zipfile; z=zipfile.ZipFile('/tmp/test-native.pptx'); print(len(z.namelist()), 'files')"  # 期望 < 100
+
+   # Step 4: Export 验证
+   node scripts/export_deck_pdf.mjs --slides /tmp/test-html/slides --out /tmp/test.pdf --width 1280 --height 720
+   node scripts/export_deck_pptx.mjs --slides /tmp/test-html/slides --out /tmp/test-image.pptx --width 1280 --height 720
+
+   # Step 5: 文档同步检查
+   # - SKILL.md 的 design rules 与代码一致
+   # - AGENTS.md 的命令速查与代码一致
+   # - CHANGELOG.md 已记录变更
+   ```
 
 ### Modifying the Skill
 1. Edit `SKILL.md` (root directory — this is the source of truth)
 2. Test by copying to `~/.claude/skills/shida-danone-ppt-skill/SKILL.md`
-3. Run a smoke test to verify behavior
+3. Run the smoke test workflow above
 
 ### Adding a New Script
 1. Place in `scripts/`, follow existing naming convention
@@ -155,16 +218,6 @@ Input (brief / notes)
 1. If the Danone template file changes, re-run `profile_danone_template.py`
 2. Update `layout-map.json` if new layouts are added/removed
 3. Verify `tokens.css` color values match the template
-
-### Running Smoke Tests
-```bash
-# Native path
-python scripts/brief_to_native_deck.py --title "Smoke" --brief-file smoke-tests/brief-native/brief.md --slides 6 --out /tmp/smoke-native.pptx
-
-# HTML path
-python scripts/notes_to_danone_deck.py --notes smoke-tests/dht-lab-notes/Slide\ notes.md --out-dir /tmp/smoke-html --brand-line "Smoke Test"
-node scripts/export_deck_pdf.mjs --slides /tmp/smoke-html/slides --out /tmp/smoke-html/deck.pdf --width 1280 --height 720
-```
 
 ---
 

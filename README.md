@@ -147,6 +147,35 @@ For full component specifications (cards, buttons, images, data viz, quote block
 ### Adding Scripts
 1. Add to `scripts/`, follow `kebab_case.py` or `camelCase.mjs` naming
 2. Document in `AGENTS.md`
+
+---
+
+## Known Issues / 已知问题
+
+> 详见 [**ROADMAP.md**](ROADMAP.md) 的完整分析和优化计划。
+
+### P0 — HTML Deck 视觉效果
+- 字体使用 Arial Narrow fallback，廉价且无品牌感（计划改用 Playfair Display + Inter）
+- 布局单调，只有 5 种对称卡片模式
+- 图片占位符像 wireframe，不像 editorial layout
+- Flat 纯色，无 gradient/shadow/视觉深度
+- 所有页都是 light 主题，没有 dark 页制造呼吸
+
+### P0 — Native PPTX 功能
+- 输出文件 15-20MB：复制了整个模板（649 文件），未清理未使用资源
+- `contents` / `three-column` intent 内容映射 broken
+- slide number 显示原始模板页码而非输出页码
+- `image-content` / `section-photo` intents 未实现
+
+---
+
+## Roadmap / 路线图
+
+See [**ROADMAP.md**](ROADMAP.md) for the full v4.0 optimization plan, including:
+- Phase 1: HTML Deck visual重构（字体、布局、图片占位符、CSS 架构、视觉深度、主题节奏）
+- Phase 2: Native PPTX 修复（资源清理、映射修复、slide number、悬空引用）
+- Phase 3: 文档同步
+- 每日开发验证流程（明天开工直接用）
 3. Update this README if user-facing
 
 ### Running Smoke Tests

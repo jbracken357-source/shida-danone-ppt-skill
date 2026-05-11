@@ -56,9 +56,14 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
   - Corporate/Default -> Blue `#005EB8`
 
 ### Typography
-- Display: Danone One Condensed (fallback: Arial Narrow -> Arial)
-- Body: Danone One Light (fallback: Arial Narrow -> Arial)
-- Chinese: Microsoft YaHei / Noto Sans SC
+- **Display / Headlines**: `Playfair Display` (Google Fonts, serif) — magazine editorial feel
+- **Body**: `Inter` (Google Fonts, sans-serif) — clean, modern, highly legible
+- **Chinese**: `Noto Sans SC` (Google Fonts)
+- **Mono / Labels / Data**: `IBM Plex Mono` — for metrics, page numbers, metadata
+- **Fallback chain**: `"Playfair Display", Georgia, serif` for display; `"Inter", "Noto Sans SC", "Microsoft YaHei", sans-serif` for body
+- **Load via Google Fonts CDN** in slide shell: `https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap`
+- **Font features**: `font-feature-settings: "tnum"` for tabular numerals; `-webkit-font-smoothing: antialiased`
+- **DO NOT use**: Arial Narrow, Arial, or generic system sans-serif for headlines — they destroy brand quality
 
 ### Components
 
@@ -135,6 +140,12 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 - [ ] Footer has chapter color bar (4px) on every page
 - [ ] No decorative illustrations — Danone is photography-driven
 - [ ] No gradient overlays on cover or closing — solid `#005EB8` only
+- [ ] Fonts loaded correctly: Playfair Display headlines, Inter body, IBM Plex Mono for data
+- [ ] Theme rhythm: no more than 3 consecutive pages of the same theme (light/dark/hero)
+- [ ] 6+ page decks have at least 1 hero page (cover, chapter divider, or big quote)
+- [ ] Image placeholders use `.frame-img` or `.img-slot`, not colored-circle wireframes
+- [ ] Visual depth exists: subtle gradients, shadows, or backdrop-blur on overlays
+- [ ] No pure-flat layouts — every page has at least one depth element
 
 ## Common mistakes to avoid
 
@@ -145,3 +156,9 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 - **Wrong cover format**: Cover must use Opening Slide Title format (white circle on blue), not a generic gradient hero.
 - **Missing slogan**: "One Planet. One Health" must appear on cover, footer of every page, and closing page.
 - **Text-only pages**: Every slide needs either a photo placeholder or a data visualization element.
+- **Arial Narrow / system fonts**: Never use Arial Narrow or generic system sans-serif for headlines. Load Playfair Display + Inter via Google Fonts CDN.
+- **Flat layouts without depth**: Don't use pure flat colors everywhere. Add subtle gradients, shadows, and backdrop-blur for visual hierarchy.
+- **Identical card grids**: Avoid repeating the same card layout on every page. Use asymmetric layouts, big quotes, stat grids, and image-led pages for rhythm.
+- **Wireframe image placeholders**: Don't use colored-circle wireframes for photos. Use `.frame-img` containers with `object-fit: cover` and editorial-style `.img-slot` placeholders.
+- **Monotonous theme**: Every slide must have a theme class (`light` / `dark` / `hero`). Continuous 3+ pages of the same theme causes visual fatigue.
+- **Missing hero pages**: Decks with 6+ slides must include at least 1 hero page (cover, chapter divider, or big quote) every 3-4 content pages.

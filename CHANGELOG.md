@@ -23,6 +23,14 @@ All notable changes to this project are documented in this file.
 - Three-column layout mapping accuracy
 - Layout cleanup for consistent spacing
 
+### Known Issues (v3.1.0)
+- **HTML Deck visual quality**: Arial Narrow fallback looks cheap; layouts are monotonous; no visual depth (gradients/shadows); no dark-page rhythm
+- **Native PPTX bloat**: Output files are 15-20MB because unused media/layouts/masters are not pruned
+- **Native PPTX content mapping broken**: `contents` and `three-column` intents map to wrong placeholder indices
+- **Native PPTX slide numbers**: Show original template slide numbers instead of output sequence (1, 2, 3...)
+- **Native PPTX dangling refs**: Removing `<p:pic>` elements does not clean up slide rels files
+- **Unsupported intents**: `image-content` and `section-photo` raise `NotImplementedError`
+
 ---
 
 ## [3.0.0] — 2026-05 (earlier)
