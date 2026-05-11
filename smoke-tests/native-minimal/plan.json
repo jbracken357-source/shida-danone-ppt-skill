@@ -1,7 +1,0 @@
-{
-  "slides": [
-    {"intent":"opening-cover","content":{"title":"Native Danone template builder","subtitle_or_date":"Minimal smoke test | May 2026"}},
-    {"intent":"two-column","content":{"title":"Native build path","left_content":"Template geometry stays real\nBrand layout is inherited\nNo HTML rebuild by default","right_content":"Clones Danone sample slides\nReplaces editable text only\nKeeps image/PDF HTML as fallback"}},
-    {"intent":"closing","content":{"title":"Template-native output"}}
-  ]
-}

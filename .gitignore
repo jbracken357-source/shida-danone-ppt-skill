@@ -10,3 +10,11 @@ node_modules/
 .DS_Store
 screenshots/
 __pycache__/
+
+# Smoke test generated artifacts (HTML decks, plans, screenshots, scripts)
+smoke-tests/**/html-deck*/
+smoke-tests/**/index.html
+smoke-tests/**/slides/
+smoke-tests/**/shared/tokens.css
+smoke-tests/**/plan*.json
+smoke-tests/**/screenshot*.js
