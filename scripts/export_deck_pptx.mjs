@@ -3,7 +3,7 @@
  * export_deck_pptx.mjs — 把多文件 slide deck 导出为 PPTX（图片铺底模式）
  *
  * 用法：
- *   node export_deck_pptx.mjs --slides <dir> --out <file.pptx> [--width 1920] [--height 1080]
+ *   node export_deck_pptx.mjs --slides <dir> --out <file.pptx> [--width 1280] [--height 720]
  *
  * 特点：
  *   - 每张 slide 截图成 PNG，满铺一张 PPTX 页面
@@ -22,15 +22,34 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
+function showHelp() {
+  console.log(`Usage: node export_deck_pptx.mjs --slides <dir> --out <file.pptx> [options]
+
+Options:
+  --slides <dir>   Directory containing .html slide files
+  --out <file>     Output PPTX file path
+  --width <px>     Slide width in pixels (default: 1280)
+  --height <px>    Slide height in pixels (default: 720)
+  --help           Show this help message
+
+Example:
+  node export_deck_pptx.mjs --slides ./deck/slides --out deck.pptx`);
+}
+
 function parseArgs() {
-  const args = { width: 1920, height: 1080 };
+  const args = { width: 1280, height: 720 };
   const a = process.argv.slice(2);
+  if (a.includes('--help') || a.includes('-h')) {
+    showHelp();
+    process.exit(0);
+  }
   for (let i = 0; i < a.length; i += 2) {
     const k = a[i].replace(/^--/, '');
     args[k] = a[i + 1];
   }
   if (!args.slides || !args.out) {
-    console.error('用法: node export_deck_pptx.mjs --slides <dir> --out <file.pptx> [--width 1920] [--height 1080]');
+    console.error('Error: --slides and --out are required');
+    showHelp();
     process.exit(1);
   }
   args.width = parseInt(args.width);
@@ -79,6 +98,17 @@ async function main() {
   const { slides, out, width, height } = parseArgs();
   const slidesDir = path.resolve(slides);
   const outFile = path.resolve(out);
+
+  try {
+    const stat = await fs.stat(slidesDir);
+    if (!stat.isDirectory()) {
+      console.error(`Error: ${slidesDir} is not a directory`);
+      process.exit(1);
+    }
+  } catch (e) {
+    console.error(`Error: slides directory not found: ${slidesDir}`);
+    process.exit(1);
+  }
 
   const files = (await fs.readdir(slidesDir))
     .filter(f => f.endsWith('.html'))

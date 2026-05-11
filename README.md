@@ -9,94 +9,167 @@
 
 | Feature / 特性 | Description / 描述 |
 |----------------|-------------------|
-| **Photo-first / 摄影优先** | Every slide has photo placeholders; Danone is never text-only / 每页都有照片占位符；Danone 从不是纯文字 |
-| **Multi-color themes / 多色主题** | 5 category colorways (Gut→Green, Sport→Orange, Clinical→Pink, Water→Teal, Corporate→Blue) / 5 种分类色域 |
-| **Data visualization / 数据可视化** | Bar charts, ring charts, big metric numbers as CSS placeholders / 条形图、环形图、大数字指标 |
-| **Circular images / 圆形图片** | Signature Danone circular photo elements across all slides / 贯穿所有页面的 Danone 标志性圆形图片元素 |
-| **Brand DNA / 品牌基因** | "One Planet. One Health" on every footer + closing page / 每页页脚 + 结尾页都有 |
-| **3 output paths / 3 种输出路径** | Native editable PPTX, HTML deck, PDF / 原生可编辑 PPTX、HTML 幻灯片、PDF |
+| **Photo-first / 摄影优先** | Every slide has photo placeholders; Danone is never text-only / 每页都有照片占位符 |
+| **Multi-color themes / 多色主题** | 5 category colorways mapped to real Danone template palettes / 5 种分类色域 |
+| **Native editable PPTX / 原生可编辑 PPTX** | Clones real template XML, keeps text editable in PowerPoint / 克隆真实模板 XML，文字可编辑 |
+| **HTML deck / HTML 幻灯片** | Full CSS styling, data viz placeholders, any layout possible / 完整 CSS 样式、数据可视化占位 |
+| **PDF export / PDF 导出** | Vector text, searchable, 1:1 visual fidelity / 矢量文字、可搜索、视觉保真 |
+| **Image PPTX / 图片式 PPTX** | Screenshot-based, 100% visual fidelity / 截图模式，100% 视觉还原 |
 
 ---
 
-## Output Paths / 输出路径
+## File Structure / 文件结构
 
-### 1. Native editable PPTX (preferred for editability / 优先可编辑性)
-```bash
-python scripts/brief_to_native_deck.py --title "X" --brief-file brief.md --slides 6 --out deck.pptx
 ```
-Copies real template layouts from `Danone Real Templates/Standard Danone Template.pptx`.
-从真实模板 `Danone Real Templates/Standard Danone Template.pptx` 复制布局。
-
-### 2. HTML deck (preferred for visual fidelity / 优先视觉保真)
-```bash
-python scripts/notes_to_danone_deck.py --notes notes.md --out-dir ./deck --brand-line "Brand X · Danone"
+.
+├── README.md              # This file
+├── SKILL.md               # Claude skill definition (source of truth)
+├── AGENTS.md              # Commands & architecture reference
+├── CHANGELOG.md           # Version history
+├── package.json           # Node.js dependencies
+├── requirements.txt       # Python dependencies (stdlib only)
+│
+├── scripts/               # Build & export scripts
+│   ├── brief_to_native_deck.py     # Brief → native PPTX
+│   ├── notes_to_danone_deck.py     # Notes → HTML deck (+ optional native)
+│   ├── build_native_pptx.py        # Core engine (XML clone + text swap)
+│   ├── export_deck_pdf.mjs         # HTML → vector PDF
+│   ├── export_deck_pptx.mjs        # HTML → image PPTX
+│   └── profile_danone_template.py  # Template analyzer
+│
+├── templates/             # Design system
+│   ├── tokens.css         # CSS design tokens
+│   ├── layout-map.json    # Intent → layout mapping
+│   └── danone-template-manifest.json
+│
+├── assets/
+│   └── deck_index.html    # Reusable deck shell
+│
+├── Danone Real Templates/
+│   └── Standard Danone Template.pptx
+│
+├── backlog/               # Decision records
+└── smoke-tests/           # Test inputs
 ```
-Generates 1280×720px HTML slides with full brand system.
-生成 1280×720px HTML 幻灯片，包含完整品牌系统。
 
-### 3. PDF export / PDF 导出
+For detailed command reference and architecture, see [**AGENTS.md**](AGENTS.md).
+
+---
+
+## Install / 安装
+
+**Node.js dependencies:**
 ```bash
-node scripts/export_deck_pdf.mjs --slides slides/ --out deck.pdf --width 1280 --height 720
+npm install
+# or: pnpm install / yarn install
 ```
 
-### 4. Image PPTX / 图片式 PPTX
+**Python:** Standard library only — no `pip install` needed.
+
+---
+
+## Quick Start / 快速开始
+
+### 1. Native editable PPTX (from brief)
 ```bash
-node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 --height 720
+python scripts/brief_to_native_deck.py \
+  --title "Strategy Deck" \
+  --brief-file smoke-tests/brief-native/brief.md \
+  --slides 6 \
+  --out deck.pptx
+```
+
+### 2. HTML deck + PDF (from structured notes)
+```bash
+# Generate HTML slides
+python scripts/notes_to_danone_deck.py \
+  --notes smoke-tests/dht-lab-notes/Slide\ notes.md \
+  --out-dir ./deck \
+  --brand-line "DHT Lab · Danone"
+
+# Export to PDF
+node scripts/export_deck_pdf.mjs \
+  --slides ./deck/slides/ \
+  --out deck.pdf \
+  --width 1280 --height 720
+```
+
+### 3. Native + HTML + PDF (full pipeline)
+```bash
+python scripts/notes_to_danone_deck.py \
+  --notes notes.md \
+  --out-dir ./deck \
+  --native-pptx ./deck/deck-editable.pptx \
+  --brand-line "Brand X · Danone"
+
+node scripts/export_deck_pdf.mjs \
+  --slides ./deck/slides/ --out ./deck/deck.pdf \
+  --width 1280 --height 720
+
+node scripts/export_deck_pptx.mjs \
+  --slides ./deck/slides/ --out ./deck/deck-image.pptx \
+  --width 1280 --height 720
 ```
 
 ---
 
 ## Design System / 设计系统
 
-### Brand DNA (non-negotiable / 不可协商)
-- **Hero cover**: `#005EB8` with gradient overlay / 渐变叠加
-- **Slogan**: "One Planet. One Health" on cover + footer / 封面 + 页脚
-- **Photography-first**: photo placeholders on every page / 每页照片占位符
-- **Multi-color themes / 多色主题**:
+### Brand DNA (non-negotiable)
+- **Hero cover**: solid `#005EB8` background, white circle, centered title — "Opening Slide Title" format
+- **Slogan**: "One Planet. One Health" on cover + every footer
+- **Photography-first**: photo placeholders on every page
+- **Multi-color themes**:
   - Gut/Natural → Green `#00A651`
   - Sport/Physical → Orange `#F26522`
   - Clinical/Baby → Pink `#E6007E`
   - Water/Hydration → Teal `#00B2A9`
   - Corporate/Default → Blue `#005EB8`
 
-### Components / 组件
-- **Cards / 卡片**: flat, rounded 12px, top accent bar (4px theme color) / 扁平圆角，顶部 4px 主题色条
-- **Product link cards / 产品链接卡片**: white background + accent top bar / 白色背景 + 主题色顶条
-- **Circular images / 圆形图片**: 120px/64px diameter, 3px/2px theme border / 直径 120px/64px，主题色边框
-- **Data viz / 数据可视化**: bar charts (28px pill), ring charts (100px), big metrics (64px) / 条形图、环形图、大数字
-- **Quote blocks / 引用块**: left accent border + decorative quote mark / 左侧强调边框 + 装饰引号
-- **Flow steps / 流程步骤**: 5-column grid, circular arrow connectors / 五列网格，圆形箭头连接
-- **Footer / 页脚**: chapter color bar (4px) + "One Planet. One Health" + page numbers / 章节色条 + 标语 + 页码
+### Closing Page
+- "Closing Slide Title" format — same blue background + white circle + "THANK YOU"
+- DANONE logo + "One Planet. One Health" at bottom
 
-### Closing page / 结尾页
-- Thank You slide with dark blue `#002677` background / 深蓝色背景
-- Large condensed typography + centered slogan / 大字标语居中
+For full component specifications (cards, buttons, images, data viz, quote blocks, flow steps, footer), see [**SKILL.md**](SKILL.md).
 
 ---
 
-## Install / 安装
+## Development / 开发
 
+### Modifying the Skill
+1. Edit `SKILL.md` in the project root — this is the **source of truth**
+2. Copy to your Claude skills directory to test:
+   ```bash
+   mkdir -p ~/.claude/skills/shida-danone-ppt-skill
+   cp SKILL.md ~/.claude/skills/shida-danone-ppt-skill/SKILL.md
+   ```
+
+### Adding Scripts
+1. Add to `scripts/`, follow `kebab_case.py` or `camelCase.mjs` naming
+2. Document in `AGENTS.md`
+3. Update this README if user-facing
+
+### Running Smoke Tests
 ```bash
-npm install playwright pdf-lib pptxgenjs sharp
+# Native path
+python scripts/brief_to_native_deck.py --title "Smoke" --brief-file smoke-tests/brief-native/brief.md --slides 6 --out /tmp/smoke.pptx
+
+# HTML path
+python scripts/notes_to_danone_deck.py --notes smoke-tests/dht-lab-notes/Slide\ notes.md --out-dir /tmp/smoke --brand-line "Smoke Test"
+node scripts/export_deck_pdf.mjs --slides /tmp/smoke/slides --out /tmp/smoke/deck.pdf --width 1280 --height 720
 ```
 
 ---
 
-## Smoke Tests / 冒烟测试
+## Documentation Index / 文档索引
 
-`smoke-tests/` contains example inputs. Generated outputs are gitignored.
-`smoke-tests/` 包含示例输入。生成产物已加入 gitignore。
-
-```bash
-# Native editable PPTX from brief / 从简报生成原生可编辑 PPTX
-python scripts/brief_to_native_deck.py --title "X" --brief-file smoke-tests/brief-native/brief.md --slides 6 --out smoke-tests/brief-native/deck.pptx
-
-# HTML deck + native PPTX from structured notes / 从结构化笔记生成
-python scripts/notes_to_danone_deck.py --notes "smoke-tests/dht-lab-notes/Slide notes.md" --out-dir smoke-tests/dht-lab-notes --native-pptx smoke-tests/dht-lab-notes/deck.pptx --brand-line "DHT Lab · Danone Science Lab"
-
-# PDF export from HTML slides / 从 HTML 导出 PDF
-node scripts/export_deck_pdf.mjs --slides smoke-tests/dht-lab-notes/slides --out smoke-tests/dht-lab-notes/deck.pdf --width 1280 --height 720
-```
+| File | Purpose | Audience |
+|------|---------|----------|
+| `README.md` | Project overview, install, quick start | Humans |
+| `SKILL.md` | Design rules, self-check, output paths | Claude AI |
+| `AGENTS.md` | Commands, architecture, file structure | Developers |
+| `CHANGELOG.md` | Version history | Everyone |
+| `backlog/` | Decision records (e.g., abandoned paths) | Developers |
 
 ---
 

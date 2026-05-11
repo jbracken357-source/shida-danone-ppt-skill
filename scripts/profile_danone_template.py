@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import zipfile
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 from xml.etree import ElementTree as ET
 
 
@@ -201,7 +204,7 @@ def main() -> None:
 
     manifest = profile_template(args.template)
     write_manifest(manifest, args.out)
-    print(f"Wrote {args.out} ({manifest['counts']['layouts']} layouts, {manifest['counts']['themes']} themes)")
+    logging.info("Wrote %s (%d layouts, %d themes)", args.out, manifest["counts"]["layouts"], manifest["counts"]["themes"])
 
 
 if __name__ == "__main__":

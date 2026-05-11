@@ -11,6 +11,19 @@ node_modules/
 screenshots/
 __pycache__/
 
+/slides-preview/
+
+# Root-level generated artifacts
+/index.html
+/slides/
+/test-output/
+/test-notes.md
+
+# Editor/OS
+*.swp
+*.swo
+Thumbs.db
+
 # Smoke test generated artifacts (HTML decks, plans, screenshots, scripts)
 smoke-tests/**/html-deck*/
 smoke-tests/**/index.html

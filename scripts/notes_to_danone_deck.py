@@ -7,10 +7,13 @@ import argparse
 import html
 import importlib.util
 import json
+import logging
 import re
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1043,7 +1046,7 @@ def render_cover(title: str, summary: str, scenarios: list[Scenario], total: int
 def render_summary(summary: str, scenarios: list[Scenario], total: int = 7) -> str:
     theme_classes = ["green", "orange", "pink"]
     card_imgs = ["Gut", "Sport", "Clinic"]
-    metrics = ["87%", "92%", "78%"]
+    metrics = ["--", "--", "--"]
     metric_labels = ["Gut Health Score", "Hydration Match", "Recovery Rate"]
     cards = ""
     for i, s in enumerate(scenarios[:3]):
@@ -1082,18 +1085,16 @@ def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
     # Use indicators if available, otherwise collected_data
     data_items = scenario.indicators if scenario.indicators else scenario.collected_data
 
-    # Data viz bars (one per data item, deterministic widths based on index)
+    # Data viz bars — use neutral 50% width when no real values provided
     viz_bars = ""
-    bar_widths = [75, 60, 85, 50]
     for idx, item in enumerate(data_items[:4]):
-        width = bar_widths[idx % len(bar_widths)]
         viz_bars += f"""<div class="viz-bar">
-        <div class="viz-bar-fill" style="width:{width}%;background:{accent}"></div>
+        <div class="viz-bar-fill" style="width:50%;background:{accent}"></div>
         <span class="viz-bar-label">{esc(trim(item, 40))}</span>
       </div>"""
 
     # Ring chart placeholder
-    ring_pct = 75 + (index * 7) % 20
+    ring_pct = "--"
 
     body = f"""<main class="slide scenario" style="--accent:{accent};--soft:{soft};--dark:{dark}">
   <div class="scenario-head">
@@ -1327,11 +1328,11 @@ def main() -> None:
         layout_map=args.layout_map,
         brand_line=args.brand_line,
     )
-    print(f"Wrote {args.out_dir} ({result['slide_count']} HTML slides, {result['scenario_count']} scenarios)")
+    logging.info("Wrote %s (%d HTML slides, %d scenarios)", args.out_dir, result["slide_count"], result["scenario_count"])
     if args.native_pptx:
-        print(f"Wrote {args.native_pptx} ({len(result['plan'])} native slides)")
+        logging.info("Wrote native %s (%d slides)", args.native_pptx, len(result["plan"]))
     if args.out_plan:
-        print(f"Wrote {args.out_plan}")
+        logging.info("Wrote plan %s", args.out_plan)
 
 
 if __name__ == "__main__":

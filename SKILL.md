@@ -91,6 +91,7 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 - **Bar charts**: 28px height, pill-shaped, theme color fill on soft background
 - **Ring charts**: 100px diameter, conic-gradient, white center hole, percentage text
 - **Big metrics**: 64px display font, theme color, with unit label
+- **No fake data**: if the user has not provided real numbers, use gray empty placeholders labeled "数据待补充" / "Data TBD" — never hardcode percentages like 87%, 92%
 
 #### Flow steps
 - 5-column grid, soft background
@@ -108,14 +109,39 @@ node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 
 
 ## Self-check
 
-- [ ] Cover uses Opening Slide Title format (blue bg + white circle + centered blue title + DANONE logo)
+### Structure (before generating)
+- [ ] Content organized as Opening → Body → Closing
+- [ ] Every page has a photo placeholder or data viz — no pure-text pages
+- [ ] Each scenario/category uses a distinct theme color (not all blue)
+
+### Cover
+- [ ] Cover uses Opening Slide Title format (solid blue bg + white circle + centered blue title + DANONE logo)
 - [ ] "One Planet. One Health" appears on cover
-- [ ] Each scenario has distinct theme color (not all blue)
-- [ ] Cards have top accent bar matching theme
-- [ ] Product link cards are white with accent top bar (not solid color)
-- [ ] Data visualization placeholders present (bars or rings)
-- [ ] Quote blocks have decorative quote mark
-- [ ] Flow steps have circular arrow connectors
-- [ ] Footer has chapter color bar
-- [ ] Thank You closing page uses Closing Slide Title format (blue bg + white circle + THANK YOU + DANONE logo)
-- [ ] No decorative illustrations (Danone is photography-driven)
+- [ ] Subtitle/date positioned above the main title
+
+### Body pages
+- [ ] Cards have top accent bar matching theme color
+- [ ] Product link cards are white with accent top bar (not solid color blocks)
+- [ ] Data visualization uses real numbers from input, or gray "Data TBD" placeholders (no fake percentages)
+- [ ] Quote blocks have decorative quote mark (Georgia serif, 48px, 25% opacity)
+- [ ] Flow steps have circular arrow connectors between them
+- [ ] Circular images have theme-colored borders (3px for large, 2px for small)
+
+### Closing
+- [ ] Thank You page uses Closing Slide Title format (blue bg + white circle + THANK YOU + DANONE logo)
+- [ ] "One Planet. One Health" appears on closing page
+
+### Global
+- [ ] Footer has chapter color bar (4px) on every page
+- [ ] No decorative illustrations — Danone is photography-driven
+- [ ] No gradient overlays on cover or closing — solid `#005EB8` only
+
+## Common mistakes to avoid
+
+- **All-blue decks**: Don't give every page the corporate blue. Different scenarios must use different theme colors.
+- **Solid product cards**: Product link cards must be white background + colored top bar. Never use solid color blocks.
+- **Decorative illustrations**: Danone is photography-driven. Do not add icons, illustrations, or clipart as decorative elements.
+- **Fake data**: Never hardcode percentages (87%, 92%, etc.) or bar widths. Use real input data or gray "Data TBD" placeholders.
+- **Wrong cover format**: Cover must use Opening Slide Title format (white circle on blue), not a generic gradient hero.
+- **Missing slogan**: "One Planet. One Health" must appear on cover, footer of every page, and closing page.
+- **Text-only pages**: Every slide needs either a photo placeholder or a data visualization element.

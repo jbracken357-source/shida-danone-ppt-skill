@@ -1,0 +1,16 @@
+{
+  "name": "shida-danone-ppt-skill",
+  "version": "3.1.0",
+  "description": "Danone-style corporate presentation generator — photo-first layouts, multi-color themes, native PPTX + HTML + PDF export",
+  "private": true,
+  "scripts": {
+    "export:pdf": "node scripts/export_deck_pdf.mjs",
+    "export:pptx": "node scripts/export_deck_pptx.mjs"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "playwright": "^1.42.0",
+    "pptxgenjs": "^3.12.0",
+    "sharp": "^0.33.0"
+  }
+}

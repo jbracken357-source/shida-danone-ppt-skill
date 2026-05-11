@@ -10,9 +10,12 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import logging
 import re
 import zipfile
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 from typing import NamedTuple
 from xml.etree import ElementTree as ET
 
@@ -488,7 +491,7 @@ def main() -> None:
 
     plan = load_plan(args.plan)
     build_presentation(args.template, args.layout_map, plan, args.out)
-    print(f"Wrote {args.out} ({len(plan)} native slides)")
+    logging.info("Wrote %s (%d native slides)", args.out, len(plan))
 
 
 if __name__ == "__main__":

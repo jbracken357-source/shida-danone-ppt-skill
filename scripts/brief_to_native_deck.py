@@ -6,8 +6,11 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import logging
 import re
 from pathlib import Path
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -203,9 +206,9 @@ def main() -> None:
         template=args.template,
         layout_map=args.layout_map,
     )
-    print(f"Wrote {args.out} ({len(plan)} native slides) from brief")
+    logging.info("Wrote %s (%d native slides) from brief", args.out, len(plan))
     if args.out_plan:
-        print(f"Wrote {args.out_plan}")
+        logging.info("Wrote plan %s", args.out_plan)
 
 
 if __name__ == "__main__":

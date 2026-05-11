@@ -1,0 +1,8 @@
+# Danone PPT Skill — Python dependencies
+# All Python scripts use only the standard library (no pip install needed).
+# Listed here for documentation purposes:
+#   argparse, json, re, zipfile, pathlib, typing, xml.etree.ElementTree, dataclasses, html, shutil, importlib.util, copy, logging
+
+# Node.js dependencies (install via npm/pnpm/yarn):
+#   playwright, pdf-lib, pptxgenjs, sharp
+# See package.json for pinned versions.
