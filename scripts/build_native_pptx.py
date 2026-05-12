@@ -307,29 +307,60 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
         put(by_idx.get("2") if "2" in by_idx else by_idx.get("14"), "insight")
     elif intent == "three-column":
         put(pick("13") if pick("13") is not None else title_shape, "title")
-        put(pick("1", "21", "24"), "column_1")
-        put(pick("2", "22", "25"), "column_2")
-        put(pick("14", "3", "23", "26"), "column_3")
+        put(pick("21", "24", "1"), "column_1")
+        put(pick("22", "25", "2"), "column_2")
+        put(pick("23", "26", "14", "3"), "column_3")
     elif intent == "scenario-detail":
         # Scenario pages: title + 3 columns (pain points, data, products)
         put(pick("13") if pick("13") is not None else title_shape, "title")
-        put(pick("1", "21", "24"), "column_1")
-        put(pick("2", "22", "25"), "column_2")
-        put(pick("14", "3", "23", "26"), "column_3")
+        put(pick("21", "24", "1"), "column_1")
+        put(pick("22", "25", "2"), "column_2")
+        put(pick("23", "26", "14", "3"), "column_3")
     elif intent == "big-message":
         put(by_idx.get("15") if "15" in by_idx else title_shape, "headline")
         put(by_idx.get("13"), "supporting_text")
     elif intent in {"image-content", "section-photo"}:
-        put(by_idx.get("14") if "14" in by_idx else title_shape, "title")
-        put(by_idx.get("1"), "body")
+        put(pick("14", "13") if pick("14", "13") is not None else title_shape, "title")
+        put(pick("1"), "body")
     elif intent == "contents":
-        put(by_idx.get("13") if "13" in by_idx else title_shape, "title")
-        put(by_idx.get("1") if "1" in by_idx else by_idx.get("2"), "agenda_items")
+        put(pick("13") if pick("13") is not None else title_shape, "title")
+        # Agenda items: distribute across available body placeholders
+        agenda_idx = [k for k in ("16", "22", "23", "24", "25") if k in by_idx]
+        if not agenda_idx:
+            agenda_idx = [k for k in ("1", "2") if k in by_idx]
+        if "agenda_items" in content and agenda_idx:
+            items = content["agenda_items"]
+            if isinstance(items, list):
+                items = [str(i) for i in items]
+            else:
+                items = str(items).split("\n")
+            for i, idx_key in enumerate(agenda_idx):
+                if i < len(items):
+                    mapped[by_idx[idx_key]] = items[i]
 
     if not mapped:
         for index, value in enumerate(content_values(intent, content)):
             if index < len(shapes):
                 mapped[index] = value
+
+    # Runtime validation: warn if expected mappings are missing
+    expected_keys = {
+        "opening-cover": ["title"],
+        "closing": ["title"],
+        "big-message": ["headline"],
+        "contents": ["title"],
+        "three-column": ["title", "column_1", "column_2", "column_3"],
+        "scenario-detail": ["title", "column_1", "column_2", "column_3"],
+        "image-content": ["title", "body"],
+        "section-photo": ["title", "body"],
+    }
+    for key in expected_keys.get(intent, []):
+        if key not in content:
+            continue
+        found = any(v == str(content[key]) for v in mapped.values())
+        if not found:
+            logging.warning("Intent '%s': content key '%s' was not mapped to any shape", intent, key)
+
     return mapped
 
 
@@ -352,7 +383,18 @@ def strip_caps_from_layouts(parts: dict[str, bytes]) -> None:
             parts[name] = ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
-def replace_text_runs(slide_xml: bytes, values: list[str], intent: str = "", content: dict | None = None) -> bytes:
+def update_slide_number(root: ET.Element, slide_index: int) -> None:
+    """Update sldNum placeholder to show output slide number."""
+    for sp in root.findall(".//p:sp", NS):
+        ph = sp.find("p:nvSpPr/p:nvPr/p:ph", NS)
+        if ph is not None and ph.attrib.get("type") == "sldNum":
+            tx_body = sp.find(".//p:txBody", NS)
+            if tx_body is not None:
+                for t in tx_body.findall(".//a:t", NS):
+                    t.text = str(slide_index)
+
+
+def replace_text_runs(slide_xml: bytes, values: list[str], intent: str = "", content: dict | None = None, slide_index: int = 0) -> bytes:
     root = ET.fromstring(slide_xml)
     shapes = [sp for sp in root.findall(".//p:sp", NS) if sp.findall(".//a:t", NS)]
     mapped = map_content_to_shapes(intent, content or {}, shapes) if content is not None else {}
@@ -367,6 +409,7 @@ def replace_text_runs(slide_xml: bytes, values: list[str], intent: str = "", con
         text_nodes = [node for node in root.findall(".//a:t", NS) if node.text and node.text.strip()]
         for node, value in zip(text_nodes, values):
             node.text = value
+    update_slide_number(root, slide_index)
     strip_text_transforms(root)
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
@@ -385,6 +428,33 @@ def remove_slide_relationships(root: ET.Element) -> None:
             root.remove(rel)
 
 
+def cleanup_unused_image_rels(slide_xml: bytes, rels_xml: bytes) -> bytes:
+    """Remove image relationships from slide rels that are no longer referenced in slide XML."""
+    root = ET.fromstring(rels_xml)
+    # Find all referenced image rIds in slide XML
+    slide_root = ET.fromstring(slide_xml)
+    used_rids = set()
+    for blip in slide_root.findall(".//a:blip", NS):
+        embed = blip.attrib.get(f"{{{NS['r']}}}embed")
+        if embed:
+            used_rids.add(embed)
+    # Also check for video/audio references
+    for elem in slide_root.iter():
+        for attr in elem.attrib:
+            if attr.endswith("}embed") or attr.endswith("}link"):
+                used_rids.add(elem.attrib[attr])
+    # Remove unused image relationships
+    IMAGE_REL_TYPES = {
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio",
+    }
+    for rel in list(root):
+        if rel.attrib.get("Type") in IMAGE_REL_TYPES and rel.attrib.get("Id") not in used_rids:
+            root.remove(rel)
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
 def remove_slide_content_overrides(root: ET.Element) -> None:
     for override in list(root):
         if (
@@ -392,6 +462,92 @@ def remove_slide_content_overrides(root: ET.Element) -> None:
             and override.attrib.get("PartName", "").startswith("/ppt/slides/slide")
         ):
             root.remove(override)
+
+
+def collect_used_resources(parts: dict[str, bytes]) -> set[str]:
+    """Trace all referenced media, layouts, masters, and themes from slide rels."""
+    used: set[str] = set()
+
+    # Collect from slide rels
+    for name, data in parts.items():
+        if not name.startswith("ppt/slides/_rels/") or not name.endswith(".rels"):
+            continue
+        root = ET.fromstring(data)
+        for rel in root:
+            target = rel.attrib.get("Target", "")
+            rel_type = rel.attrib.get("Type", "")
+            # Normalize target path
+            base = name.rsplit("/_rels/", 1)[0]
+            resolved = normalize_part(base, target)
+            used.add(resolved)
+
+    # Collect from layout rels (follow used layouts)
+    layout_rels = {}
+    for name, data in parts.items():
+        if name.startswith("ppt/slideLayouts/_rels/") and name.endswith(".rels"):
+            layout_name = name.replace("ppt/slideLayouts/_rels/", "").replace(".rels", "")
+            layout_rels[layout_name] = data
+
+    for resolved in list(used):
+        if resolved.startswith("ppt/slideLayouts/") and resolved.endswith(".xml"):
+            layout_name = Path(resolved).name
+            rels_name = f"ppt/slideLayouts/_rels/{layout_name}.rels"
+            if rels_name in parts:
+                used.add(rels_name)
+                root = ET.fromstring(parts[rels_name])
+                for rel in root:
+                    target = rel.attrib.get("Target", "")
+                    resolved2 = normalize_part("ppt/slideLayouts", target)
+                    used.add(resolved2)
+
+    # Collect from master rels (follow used masters)
+    for resolved in list(used):
+        if resolved.startswith("ppt/slideMasters/") and resolved.endswith(".xml"):
+            master_name = Path(resolved).name
+            rels_name = f"ppt/slideMasters/_rels/{master_name}.rels"
+            if rels_name in parts:
+                used.add(rels_name)
+                root = ET.fromstring(parts[rels_name])
+                for rel in root:
+                    target = rel.attrib.get("Target", "")
+                    resolved2 = normalize_part("ppt/slideMasters", target)
+                    used.add(resolved2)
+
+    return used
+
+
+def cleanup_unused_resources(parts: dict[str, bytes]) -> dict[str, bytes]:
+    """Remove unreferenced media, layouts, masters, and themes to reduce file size."""
+    used = collect_used_resources(parts)
+
+    # Always keep core files
+    core_files = {
+        "ppt/presentation.xml",
+        "ppt/_rels/presentation.xml.rels",
+        "[Content_Types].xml",
+        "_rels/.rels",
+    }
+    used.update(core_files)
+
+    cleaned: dict[str, bytes] = {}
+    removed_count = 0
+    for name, data in parts.items():
+        if name in used or name.startswith("ppt/slides/") or name.startswith("ppt/slides/_rels/"):
+            cleaned[name] = data
+        elif any(name.startswith(prefix) for prefix in [
+            "ppt/media/", "ppt/slideLayouts/", "ppt/slideMasters/",
+            "ppt/theme/", "ppt/notesSlides/", "ppt/notesMasters/",
+            "ppt/handoutMasters/", "ppt/presProps.xml", "ppt/tableStyles.xml",
+            "ppt/viewProps.xml", "docProps/"
+        ]):
+            removed_count += 1
+            continue
+        else:
+            cleaned[name] = data
+
+    if removed_count > 0:
+        logging.info("Removed %d unreferenced resource files", removed_count)
+    return cleaned
 
 
 def build_presentation(
@@ -435,9 +591,10 @@ def build_presentation(
             slide_part = f"ppt/slides/slide{index}.xml"
             slide_rels = f"ppt/slides/_rels/slide{index}.xml.rels"
             parts[slide_part] = replace_text_runs(
-                zf.read(source.slide_part), values, intent=intent, content=spec.get("content", {})
+                zf.read(source.slide_part), values, intent=intent, content=spec.get("content", {}), slide_index=index
             )
-            parts[slide_rels] = zf.read(source.rels_part)
+            raw_rels = zf.read(source.rels_part)
+            parts[slide_rels] = cleanup_unused_image_rels(parts[slide_part], raw_rels)
 
             rid = f"rIdNative{index}"
             ET.SubElement(
@@ -465,6 +622,9 @@ def build_presentation(
         parts["[Content_Types].xml"] = ET.tostring(
             content_types, encoding="utf-8", xml_declaration=True
         )
+
+    # Cleanup unreferenced resources to reduce file size
+    parts = cleanup_unused_resources(parts)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out_path, "w", compression=zipfile.ZIP_DEFLATED) as out:

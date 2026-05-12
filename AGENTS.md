@@ -11,7 +11,7 @@ Danone-style corporate presentation generator. Dual-path architecture:
 - **Native PPTX path**: clones real Danone template XML, swaps text → editable in PowerPoint
 - **HTML deck path**: renders CSS slides → export to vector PDF or image PPTX
 
-Version: 3.1.0
+Version: 4.0.0
 
 ---
 
@@ -143,20 +143,15 @@ Input (brief / notes)
 
 > 详见 `ROADMAP.md` 的完整分析和优化计划。
 
-### P0 — HTML Deck 视觉效果
-- 字体使用 Arial Narrow fallback，廉价且无品牌感
-- 布局单调，只有 5 种对称卡片模式
-- 图片占位符像 wireframe，不像 editorial layout
-- Flat 纯色，无 gradient/shadow/视觉深度
-- 所有页都是 light 主题，没有 dark 页制造呼吸
+### P1 — HTML Deck 待完善
+- 9 种新布局中部分尚未在 `plan_from_notes` 中自动生成（当前仍使用原有 5 种布局）
+- Dark 主题页面样式已定义但尚未在生成逻辑中强制插入（需 6 页以上 deck）
+- `.img-slot` 占位符尚未支持直接传入真实图片路径
 
-### P0 — Native PPTX 功能
-- 输出文件 15-20MB：复制了整个模板（649 文件），未清理未使用资源
-- `contents` intent 内容映射 broken（查找 idx=1/2，实际用 idx=16,22-25）
-- `three-column` intent 内容映射 broken（查找 idx=1,2,14，实际用 idx=21-26）
-- slide number 显示原始模板页码而非输出页码
-- 悬空图片引用（移除 pic 未清理 rels）
-- `image-content` / `section-photo` intents 未实现
+### P1 — Native PPTX 待完善
+- `image-content` / `section-photo` intents 仍标记为 `native_supported: false`（图片替换需手动处理）
+- 资源清理可能过于激进，某些边缘 case 的字体文件可能被误删（已保留核心文件）
+- 未对清理后的文件数做下限验证（当前 ~87 文件，目标 < 100）
 
 ---
 

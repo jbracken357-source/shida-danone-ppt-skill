@@ -2,6 +2,31 @@
 
 All notable changes to this project are documented in this file.
 
+## [4.0.0] — 2026-05-12
+
+### Added
+- **Editorial font stack**: Playfair Display (serif headlines) + Inter (body) + IBM Plex Mono (data/labels)
+- **Visual depth system**: subtle card shadows, radial gradients on cover/closing, backdrop-filter blur, ghost numbers
+- **New image placeholder system**: `.frame-img` (object-fit:cover) + `.img-slot` (editorial dashed border with ratio labels)
+- **Theme rhythm**: slides mark `theme="light"` / `theme="dark"` / `theme="hero"` for visual pacing
+- **New layout CSS**: Stat Grid, Before/After comparison, Image+Text editorial split, Big Quote
+- **Runtime mapping validation**: warns when content keys fail to map to shapes
+- **Unused resource cleanup**: traces referenced media/layouts/masters and removes unreferenced files
+- **Slide number fix**: updates `sldNum` placeholder to output sequence (1, 2, 3...)
+- **Dangling reference cleanup**: removes unused image relationships from slide rels when pics are removed
+
+### Changed
+- Replaced Arial Narrow fallback with editorial magazine font stack
+- Updated `tokens.css` with new font variables and `font-feature-settings: "tnum"`
+- Replaced `.img-circle` wireframe placeholders with `.img-slot` editorial placeholders
+- Enhanced cover/closing with radial gradient overlays
+
+### Fixed
+- **Native PPTX file size**: 15-20MB → ~700KB (removed 562 unreferenced files)
+- **Content mapping**: `contents` intent now maps to idx=16,22-25; `three-column` / `scenario-detail` map to idx=21-26
+- **Slide numbers**: now show correct output page numbers instead of original template page numbers
+- **Dangling image refs**: removing `<p:pic>` now cleans up slide rels files
+
 ## [3.1.0] — 2026-05-11
 
 ### Added

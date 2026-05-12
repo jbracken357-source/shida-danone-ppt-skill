@@ -1,7 +1,7 @@
 # Shida Danone PPT Skill / Shida Danone PPT 技能
 
-> **EN**: Danone-style corporate presentation generator. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. v3.1.0.
-> **CN**: Danone 风格企业演示文稿生成器。摄影优先布局、多色分类主题、"One Planet. One Health" 品牌基因。v3.1.0。
+> **EN**: Danone-style corporate presentation generator. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. v4.0.0.
+> **CN**: Danone 风格企业演示文稿生成器。摄影优先布局、多色分类主题、"One Planet. One Health" 品牌基因。v4.0.0。
 
 ---
 
@@ -9,8 +9,10 @@
 
 | Feature / 特性 | Description / 描述 |
 |----------------|-------------------|
-| **Photo-first / 摄影优先** | Every slide has photo placeholders; Danone is never text-only / 每页都有照片占位符 |
+| **Editorial typography / 杂志级排版** | Playfair Display + Inter + IBM Plex Mono font stack / 衬线标题 + 非衬线正文 + 等宽数据 |
+| **Photo-first / 摄影优先** | Editorial image placeholders with ratio labels / 编辑风格图片占位符，标注比例 |
 | **Multi-color themes / 多色主题** | 5 category colorways mapped to real Danone template palettes / 5 种分类色域 |
+| **Theme rhythm / 主题节奏** | Light / dark / hero page alternation for visual breathing / 明暗交替制造视觉呼吸 |
 | **Native editable PPTX / 原生可编辑 PPTX** | Clones real template XML, keeps text editable in PowerPoint / 克隆真实模板 XML，文字可编辑 |
 | **HTML deck / HTML 幻灯片** | Full CSS styling, data viz placeholders, any layout possible / 完整 CSS 样式、数据可视化占位 |
 | **PDF export / PDF 导出** | Vector text, searchable, 1:1 visual fidelity / 矢量文字、可搜索、视觉保真 |

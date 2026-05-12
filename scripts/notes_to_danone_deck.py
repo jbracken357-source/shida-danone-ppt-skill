@@ -61,8 +61,10 @@ def pick_theme(scenario_name: str) -> dict:
 
 BASE_COMPONENT_CSS = """
 :root {
-  --dn-font: "Danone One Light", "Arial Narrow", "Arial", "Microsoft YaHei", sans-serif;
-  --dn-font-display: "Danone One Condensed", "Arial Narrow", "Arial", "Microsoft YaHei", sans-serif;
+  --dn-font: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --dn-font-display: "Playfair Display", "Noto Sans SC", "PingFang SC", serif;
+  --dn-font-mono: "IBM Plex Mono", "SF Mono", "Consolas", monospace;
+  font-feature-settings: "tnum";
 }
 
 h1, h2, h3, h4, p, ul, li {
@@ -98,6 +100,24 @@ li::marker {
   background: var(--dn-blue);
   color: #fff;
 }
+
+.slide-dark {
+  background: var(--dn-blue-dark);
+  color: #fff;
+}
+.slide-dark .eyebrow { color: rgba(255,255,255,0.6); }
+.slide-dark .title { color: #fff; }
+.slide-dark .headline { color: #fff; }
+.slide-dark li { color: rgba(255,255,255,0.85); }
+.slide-dark li::marker { color: rgba(255,255,255,0.5); }
+.slide-dark .footer { border-top-color: rgba(255,255,255,0.12); }
+.slide-dark .footer p { color: rgba(255,255,255,0.5); }
+.slide-dark .narrative-card {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.1);
+}
+.slide-dark .narrative-card h3 { color: #fff; }
+.slide-dark .narrative-card p { color: rgba(255,255,255,0.7); }
 
 /* ---- Cover ---- */
 .cover-bg {
@@ -140,6 +160,7 @@ li::marker {
   line-height: 1.04;
   font-weight: 700;
   color: #fff;
+  letter-spacing: -0.01em;
 }
 .cover-copy {
   font-size: 26px;
@@ -503,7 +524,7 @@ li::marker {
   font-weight: 700;
   color: var(--dn-blue);
   line-height: 1.2;
-  letter-spacing: 1px;
+  letter-spacing: -0.01em;
 }
 .opening-logo {
   position: absolute;
@@ -553,7 +574,7 @@ li::marker {
   font-weight: 700;
   color: var(--dn-blue);
   line-height: 1.15;
-  letter-spacing: 1px;
+  letter-spacing: -0.01em;
 }
 .closing-subtitle {
   font-size: 20px;
@@ -635,6 +656,7 @@ li::marker {
   line-height: 1.06;
   font-weight: 700;
   color: var(--dn-text);
+  letter-spacing: -0.01em;
 }
 .headline {
   margin-top: 14px;
@@ -643,6 +665,7 @@ li::marker {
   line-height: 1.08;
   font-weight: 700;
   color: var(--dn-text);
+  letter-spacing: -0.01em;
 }
 
 /* Metric big number */
@@ -652,6 +675,8 @@ li::marker {
   line-height: 1;
   font-weight: 700;
   color: var(--dn-blue);
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
 }
 
 /* ---- Photography Placeholder (Danone signature) ---- */
@@ -706,6 +731,143 @@ li::marker {
   text-align: center;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+/* ---- Stat Grid (Big Number Poster) ---- */
+.stat-grid {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.stat-cell {
+  position: relative;
+  padding: 32px 28px;
+  background: #fff;
+  border: 1px solid var(--dn-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.stat-cell .stat-number {
+  font-family: var(--dn-font-display);
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent, var(--dn-blue));
+  letter-spacing: -0.03em;
+  font-feature-settings: "tnum";
+}
+.stat-cell .stat-label {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dn-text);
+  line-height: 1.3;
+}
+.stat-cell .stat-desc {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--dn-text-secondary);
+  line-height: 1.35;
+}
+
+/* ---- Before / After Comparison ---- */
+.compare-grid {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+.compare-card {
+  padding: 32px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.compare-card.before {
+  background: var(--dn-soft);
+  border: 1px solid var(--dn-border);
+}
+.compare-card.after {
+  background: var(--accent, var(--dn-blue));
+  color: #fff;
+}
+.compare-card.after h3,
+.compare-card.after li {
+  color: #fff;
+}
+.compare-card.after li::marker {
+  color: rgba(255,255,255,0.6);
+}
+.compare-label {
+  font-family: var(--dn-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+/* ---- Image + Text (Editorial) ---- */
+.editorial-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  height: 100%;
+  align-items: center;
+}
+.editorial-split.reverse {
+  direction: rtl;
+}
+.editorial-split.reverse > * {
+  direction: ltr;
+}
+.editorial-image {
+  position: relative;
+  height: 100%;
+  min-height: 720px;
+  overflow: hidden;
+}
+.editorial-image .frame-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.editorial-text {
+  padding: 72px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ---- Big Quote Page ---- */
+.big-quote-slide {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 72px 120px;
+}
+.big-quote-text {
+  font-family: var(--dn-font-display);
+  font-size: 42px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--dn-text);
+  font-style: italic;
+}
+.big-quote-source {
+  margin-top: 32px;
+  font-family: var(--dn-font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dn-text-secondary);
 }
 
 /* ---- Data Visualization Placeholders ---- */
@@ -777,7 +939,85 @@ li::marker {
   color: var(--accent, var(--dn-blue));
 }
 
-/* Photo strip (Danone signature element) */
+/* ---- Editorial image placeholders ---- */
+.frame-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.img-slot {
+  border: 2px dashed var(--dn-border);
+  border-radius: 8px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(0,0,0,0.03) 8px,
+    rgba(0,0,0,0.03) 16px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--dn-font-mono);
+  font-size: 11px;
+  color: var(--dn-text-secondary);
+  text-align: center;
+  position: relative;
+}
+.img-slot::before {
+  content: attr(data-ratio);
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 9px;
+  color: rgba(0,0,0,0.35);
+  background: rgba(255,255,255,0.7);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+/* ---- Visual depth ---- */
+.card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+}
+.card-shadow:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.cover-gradient {
+  background: radial-gradient(ellipse 80% 60% at 70% 40%, rgba(255,255,255,0.12) 0%, transparent 70%),
+              linear-gradient(105deg, rgba(0,94,184,0.92) 0%, rgba(0,94,184,0.72) 45%, rgba(0,94,184,0.25) 100%);
+}
+
+.img-overlay {
+  position: relative;
+}
+.img-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,38,119,0.35);
+  backdrop-filter: blur(2px);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.ghost-number {
+  position: absolute;
+  font-family: var(--dn-font-display);
+  font-size: 280px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent, var(--dn-blue));
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+/* ---- Photo strip (Danone signature element) ---- */
 .photo-strip {
   display: flex;
   gap: 12px;
@@ -1018,7 +1258,7 @@ def slide_shell(title: str, body: str, extra_css: str = "") -> str:
 <title>{esc(title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/tokens.css">
 <style>{extra_css}</style>
 </head>
@@ -1030,7 +1270,7 @@ def slide_shell(title: str, body: str, extra_css: str = "") -> str:
 
 
 def render_cover(title: str, summary: str, scenarios: list[Scenario], total: int = 7, brand_line: str = "Danone Science Lab") -> str:
-    body = f"""<main class="slide opening-slide">
+    body = f"""<main class="slide opening-slide" theme="hero">
   <div class="opening-circle">
     <p class="opening-subtitle">{esc(brand_line)}</p>
     <h1 class="opening-title">{esc(title)}</h1>
@@ -1057,7 +1297,7 @@ def render_summary(summary: str, scenarios: list[Scenario], total: int = 7) -> s
         cards += f"""<div class="narrative-card {cls}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <p class="metric">0{s.number}</p>
-        <div class="img-circle-sm" style="--accent:var(--dn-{cls if cls else 'blue'});--soft:var(--dn-{cls if cls else 'blue'}-soft)"><span>{img_label}</span></div>
+        <div class="img-slot" style="--accent:var(--dn-{cls if cls else 'blue'});--soft:var(--dn-{cls if cls else 'blue'}-soft);width:64px;height:64px;border-radius:50%;" data-ratio="1:1"><span>{img_label}</span></div>
       </div>
       <h3>{esc(s.name)}</h3>
       <p>{esc(s.shorthand or s.core_message)}</p>
@@ -1067,7 +1307,7 @@ def render_summary(summary: str, scenarios: list[Scenario], total: int = 7) -> s
       </div>
     </div>"""
 
-    body = f"""<main class="slide">
+    body = f"""<main class="slide" theme="light">
   <p class="eyebrow">Narrative Frame</p>
   <h2 class="title">{esc(summary)}</h2>
   <div class="narrative-grid">{cards}</div>
@@ -1096,14 +1336,14 @@ def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
     # Ring chart placeholder
     ring_pct = "--"
 
-    body = f"""<main class="slide scenario" style="--accent:{accent};--soft:{soft};--dark:{dark}">
+    body = f"""<main class="slide scenario" theme="light" style="--accent:{accent};--soft:{soft};--dark:{dark}">
   <div class="scenario-head">
     <div>
       <p class="eyebrow" style="color:{accent}">Scenario 0{scenario.number}</p>
       <h2 class="headline">{esc(scenario.name)}</h2>
     </div>
     <div style="display:flex;align-items:center;gap:18px;">
-      <div class="img-circle" style="--accent:{accent};--soft:{soft}"><span>Device<br>Photo</span></div>
+      <div class="img-slot" style="--accent:{accent};--soft:{soft};width:120px;height:120px;border-radius:50%;" data-ratio="1:1"><span>Device<br>Photo</span></div>
       <div class="hardware-box">
         <p>Hardware Object</p>
         <h3>{esc(scenario.hardware)}</h3>
@@ -1129,8 +1369,8 @@ def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
       <h3>Danone Product Link</h3>
       <ul>{render_bullets(scenario.products, "待补充 Danone 产品", 3)}</ul>
       <div class="photo-strip" style="margin-top:14px;">
-        <div class="img-circle-sm" style="--accent:{accent};--soft:{soft}"><span>Prod</span></div>
-        <div class="img-circle-sm" style="--accent:{accent};--soft:{soft}"><span>Pack</span></div>
+        <div class="img-slot" style="--accent:{accent};--soft:{soft};width:64px;height:64px;border-radius:50%;" data-ratio="1:1"><span>Prod</span></div>
+        <div class="img-slot" style="--accent:{accent};--soft:{soft};width:64px;height:64px;border-radius:50%;" data-ratio="1:1"><span>Pack</span></div>
       </div>
     </section>
   </div>
@@ -1161,7 +1401,7 @@ def render_flow(showcase_flow: list[str], summary: str, index: int = 6, total: i
       <h3>{esc(item)}</h3>
     </div>"""
 
-    body = f"""<main class="slide">
+    body = f"""<main class="slide" theme="light">
   <p class="eyebrow">Showcase Structure</p>
   <h2 class="title">From Measurement to a Personalized Danone Journey</h2>
   <div class="flow-grid">{steps}</div>
@@ -1172,7 +1412,7 @@ def render_flow(showcase_flow: list[str], summary: str, index: int = 6, total: i
 
 
 def render_thankyou(summary: str, index: int = 7, total: int = 7, brand_line: str = "Danone Science Lab") -> str:
-    body = f"""<main class="slide closing-slide">
+    body = f"""<main class="slide closing-slide" theme="hero">
   <div class="closing-circle">
     <h1 class="closing-title">THANK YOU</h1>
     <p class="closing-subtitle">{esc(summary)}</p>

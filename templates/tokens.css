@@ -38,9 +38,10 @@
   --dn-text-secondary: rgba(0,0,0,0.6);
   --dn-border: rgba(0,0,0,0.15);
 
-  /* Fonts: template uses Danone One Condensed / Danone One Light */
-  --dn-font: "Danone One Light", "Arial Narrow", "Arial", sans-serif;
-  --dn-font-display: "Danone One Condensed", "Arial Narrow", "Arial", sans-serif;
+  /* Fonts: editorial magazine stack */
+  --dn-font: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --dn-font-display: "Playfair Display", "Noto Sans SC", "PingFang SC", serif;
+  --dn-font-mono: "IBM Plex Mono", "SF Mono", "Consolas", monospace;
 
   /* Brand slogan */
   --dn-slogan: "One Planet. One Health";
