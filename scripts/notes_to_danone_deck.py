@@ -1049,6 +1049,7 @@ class Scenario:
     products: list[str] = field(default_factory=list)
     core_message: str = ""
     shorthand: str = ""
+    photo_hints: list[dict] = field(default_factory=list)
 
 
 def load_native_builder():
@@ -1153,6 +1154,11 @@ def collect_core_message(block: str) -> str:
     return "待补充核心信息"
 
 
+def collect_photo_hints(block: str) -> list[dict]:
+    """Extract [img: xxx] / [photo: xxx] markers from scenario block."""
+    return parse_image_hints(block)
+
+
 def parse_shorthands(markdown: str) -> dict[str, str]:
     result: dict[str, str] = {}
     for raw in markdown.splitlines():
@@ -1191,6 +1197,7 @@ def parse_notes(markdown: str) -> tuple[str, list[Scenario], list[str], str]:
         scenario.indicators = collect_list_after(block, ("interpreted indicators", "指标"))
         scenario.products = collect_list_after(block, ("link to danone products", "产品"))
         scenario.core_message = collect_core_message(block)
+        scenario.photo_hints = collect_photo_hints(block)
         scenario.shorthand = shorthands.get(name, "")
         if not scenario.shorthand:
             for key, value in shorthands.items():
@@ -1198,6 +1205,15 @@ def parse_notes(markdown: str) -> tuple[str, list[Scenario], list[str], str]:
                     scenario.shorthand = value
                     break
         scenarios.append(scenario)
+
+    # If scenarios have no photo hints, try global hints at top of file
+    if all(not s.photo_hints for s in scenarios):
+        global_hints = parse_image_hints(markdown)
+        if global_hints:
+            # Distribute: first hint to first scenario device, rest to products
+            for i, scenario in enumerate(scenarios):
+                start = i * 3
+                scenario.photo_hints = global_hints[start:start + 3] or [{"path": "", "label": "Photo"}]
 
     summary_match = re.search(r"### 总结一句\s*\n>\s*(.+)", markdown)
     summary = clean_inline(summary_match.group(1)) if summary_match else "Danone 不只是提供营养，而是让营养被数据证明。"
@@ -1406,6 +1422,16 @@ def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
     # Ring chart placeholder
     ring_pct = "--"
 
+    # Image slots from user-provided hints
+    device_hint = scenario.photo_hints[0] if scenario.photo_hints else {"path": "", "label": "Device Photo"}
+    prod_hints = scenario.photo_hints[1:] if len(scenario.photo_hints) > 1 else [
+        {"path": "", "label": "Prod"},
+        {"path": "", "label": "Pack"},
+    ]
+
+    device_img = render_image_slot(device_hint, size="120px", ratio="1:1")
+    prod_imgs = "".join(render_image_slot(h, size="64px", ratio="1:1") for h in prod_hints[:2])
+
     body = f"""<main class="slide scenario" theme="light" style="--accent:{accent};--soft:{soft};--dark:{dark}">
   <div class="scenario-head">
     <div>
@@ -1413,7 +1439,7 @@ def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
       <h2 class="headline">{esc(scenario.name)}</h2>
     </div>
     <div style="display:flex;align-items:center;gap:18px;">
-      <div class="img-slot" style="--accent:{accent};--soft:{soft};width:120px;height:120px;border-radius:50%;" data-ratio="1:1"><span>Device<br>Photo</span></div>
+      {device_img}
       <div class="hardware-box">
         <p>Hardware Object</p>
         <h3>{esc(scenario.hardware)}</h3>
@@ -1439,8 +1465,7 @@ def render_scenario(index: int, scenario: Scenario, total: int = 7) -> str:
       <h3>Danone Product Link</h3>
       <ul>{render_bullets(scenario.products, "待补充 Danone 产品", 3)}</ul>
       <div class="photo-strip" style="margin-top:14px;">
-        <div class="img-slot" style="--accent:{accent};--soft:{soft};width:64px;height:64px;border-radius:50%;" data-ratio="1:1"><span>Prod</span></div>
-        <div class="img-slot" style="--accent:{accent};--soft:{soft};width:64px;height:64px;border-radius:50%;" data-ratio="1:1"><span>Pack</span></div>
+        {prod_imgs}
       </div>
     </section>
   </div>
