@@ -1037,6 +1037,18 @@ li::marker {
 
 
 @dataclass
+class StrategicSlide:
+    """A single slide from a strategic/VP review deck."""
+    number: int
+    title: str
+    page_role: str = ""
+    key_message: str = ""
+    must_show: list[str] = field(default_factory=list)
+    recommended_visual: str = ""  # maps to layout intent
+    speaker_script: str = ""
+
+
+@dataclass
 class Scenario:
     number: str
     name: str
@@ -1297,6 +1309,97 @@ def plan_from_notes(title: str, scenarios: list[Scenario], showcase_flow: list[s
     plan.append({"intent": "closing", "theme": "hero"})
 
     return plan
+
+
+def parse_strategic_notes(markdown: str) -> tuple[str, list[StrategicSlide]]:
+    """Parse strategic/VP review Markdown with `## Slide N — Title` format.
+
+    Each slide may have sub-sections:
+    - ### Page role
+    - ### Key message
+    - ### Must show on slide
+    - ### Recommended visual
+    - ### Speaker script
+    """
+    title_match = re.search(r"^#\s+(.+)$", markdown, re.MULTILINE)
+    title = clean_inline(title_match.group(1)) if title_match else "Strategic Deck"
+
+    # Match ## Slide N — Title or ## Slide N：Title
+    pattern = re.compile(r"^##\s+Slide\s+(\d+)\s*[—\-:：]\s*(.+?)\s*$", re.MULTILINE)
+    matches = list(pattern.finditer(markdown))
+    slides: list[StrategicSlide] = []
+
+    for i, match in enumerate(matches):
+        number = int(match.group(1))
+        slide_title = clean_inline(match.group(2))
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(markdown)
+        block = markdown[start:end]
+
+        slide = StrategicSlide(number=number, title=slide_title)
+
+        lines = block.splitlines()
+        current_section = ""
+        for raw in lines:
+            line = raw.strip()
+            if line.startswith("### "):
+                current_section = clean_inline(line[4:]).lower()
+                continue
+            if not line:
+                continue
+            if current_section == "page role":
+                slide.page_role = clean_inline(line)
+            elif current_section == "key message":
+                slide.key_message = clean_inline(line.lstrip("> "))
+            elif current_section == "must show on slide":
+                if line.startswith("- "):
+                    slide.must_show.append(clean_inline(line[2:]))
+                else:
+                    slide.must_show.append(clean_inline(line))
+            elif current_section == "recommended visual":
+                slide.recommended_visual = clean_inline(line)
+            elif current_section == "speaker script":
+                slide.speaker_script += clean_inline(line) + " "
+
+        slides.append(slide)
+
+    return title, slides
+
+
+# Map visual recommendations to layout intents
+VISUAL_TO_INTENT = {
+    "decision matrix": "decision-grid",
+    "2×2": "decision-grid",
+    "decision grid": "decision-grid",
+    "before/after": "positioning",
+    "before vs after": "positioning",
+    "contrast": "positioning",
+    "flow": "master-storyline",
+    "pipeline": "master-storyline",
+    "storyline": "master-storyline",
+    "matrix": "service-architecture",
+    "priority table": "service-architecture",
+    "hero split": "hero-demo",
+    "two-column": "hero-demo",
+    "flywheel": "data-flywheel",
+    "loop": "data-flywheel",
+    "journey": "experience-space",
+    "customer journey": "experience-space",
+    "naming": "naming-direction",
+    "recommendation": "naming-direction",
+}
+
+
+def classify_strategic_slide(slide: StrategicSlide) -> str:
+    """Classify a strategic slide's layout intent from its visual recommendation."""
+    visual = slide.recommended_visual.lower()
+    for keyword, intent in VISUAL_TO_INTENT.items():
+        if keyword in visual:
+            return intent
+    # Default: if it has bullets → decision-grid, if it has key message → positioning
+    if slide.must_show:
+        return "decision-grid"
+    return "positioning"
 
 
 def esc(value: str) -> str:
@@ -1619,6 +1722,313 @@ def render_editorial_split(headline: str, body_text: str, image_label: str = "Ph
     return slide_shell("Editorial Split", body)
 
 
+# ---- Strategic / VP Review Render Functions ----
+
+_STRATEGIC_CSS = """
+.decision-grid { margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.decision-card { padding:24px; border-radius:12px; border:1px solid var(--dn-border); background:#fff; }
+.decision-card.accent { background:var(--dn-soft); border-left:4px solid var(--dn-blue); }
+.decision-card h3 { font-size:18px; font-weight:700; color:var(--dn-text); margin-bottom:10px; }
+.decision-card ul { padding-left:18px; }
+.decision-card li { font-size:15px; line-height:1.4; color:var(--dn-text-secondary); }
+.positioning-row { margin-top:36px; display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.positioning-col { padding:28px; border-radius:12px; }
+.positioning-col.not { background:var(--dn-soft); border:1px solid var(--dn-border); }
+.positioning-col.is { background:var(--dn-blue); color:#fff; }
+.positioning-col.is h3, .positioning-col.is li { color:#fff; }
+.positioning-col.is li::marker { color:rgba(255,255,255,0.6); }
+.positioning-col h3 { font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:14px; }
+.storyline-flow { margin-top:36px; display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+.storyline-step { flex:1; min-width:140px; padding:20px 16px; background:var(--dn-soft); border-radius:12px; border-top:4px solid var(--dn-blue); }
+.storyline-step .step-num { font-family:var(--dn-font-display); font-size:32px; font-weight:700; color:var(--dn-blue); }
+.storyline-step h4 { font-size:14px; font-weight:600; margin-top:8px; color:var(--dn-text); }
+.service-matrix { margin-top:28px; width:100%; border-collapse:collapse; }
+.service-matrix th, .service-matrix td { padding:10px 14px; border:1px solid var(--dn-border); text-align:left; font-size:14px; }
+.service-matrix th { background:var(--dn-blue); color:#fff; font-weight:600; }
+.priority-hero { color:var(--dn-blue); font-weight:700; }
+.flywheel-container { margin-top:36px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px; }
+.flywheel-step { width:140px; height:140px; border-radius:50%; background:var(--dn-soft); border:3px solid var(--dn-blue); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:12px; }
+.flywheel-step .fw-num { font-family:var(--dn-font-display); font-size:28px; font-weight:700; color:var(--dn-blue); }
+.flywheel-step h4 { font-size:12px; font-weight:600; color:var(--dn-text); margin-top:6px; }
+.experience-journey { margin-top:36px; display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.journey-stage { padding:20px; border-radius:12px; background:var(--dn-soft); border-top:4px solid var(--dn-blue); }
+.journey-stage h4 { font-size:14px; font-weight:700; margin-bottom:8px; color:var(--dn-text); }
+.journey-stage p { font-size:13px; color:var(--dn-text-secondary); line-height:1.3; }
+.naming-table { margin-top:28px; width:100%; }
+.naming-table th, .naming-table td { padding:10px 14px; border:1px solid var(--dn-border); text-align:left; font-size:14px; }
+.naming-table th { background:var(--dn-blue); color:#fff; }
+.recommendation-box { margin-top:24px; padding:20px; background:var(--dn-soft); border-left:4px solid var(--dn-blue); border-radius:0 12px 12px 0; }
+.recommendation-box h3 { font-size:16px; font-weight:700; color:var(--dn-text); margin-bottom:8px; }
+"""
+
+
+def render_strategic_slide(slide: StrategicSlide, index: int, total: int, intent: str = "") -> str:
+    """Route a strategic slide to the appropriate render function."""
+    # Respect explicit intent from plan first
+    if intent == "strategic-cover":
+        return _render_strategic_cover(slide, index, total)
+    if intent == "strategic-closing":
+        return _render_strategic_closing(slide, index, total)
+
+    # Otherwise classify from slide content
+    intent = classify_strategic_slide(slide)
+    renderers = {
+        "cover": _render_strategic_cover,
+        "closing": _render_strategic_closing,
+        "decision-grid": render_decision_grid,
+        "positioning": render_positioning,
+        "master-storyline": render_master_storyline,
+        "service-architecture": render_service_architecture,
+        "hero-demo": render_hero_demo,
+        "data-flywheel": render_data_flywheel,
+        "experience-space": render_experience_space,
+        "naming-direction": render_naming_direction,
+    }
+    renderer = renderers.get(intent, render_decision_grid)
+    return renderer(slide, index, total)
+
+
+def _render_strategic_cover(slide: StrategicSlide, index: int, total: int) -> str:
+    body = f"""<main class="slide opening-slide" theme="hero">
+  <div class="opening-circle">
+    <p class="opening-subtitle">Strategic Review</p>
+    <h1 class="opening-title">{esc(slide.title)}</h1>
+    <div class="opening-logo">
+      <p class="opening-logo-text">DANONE</p>
+      <p class="opening-logo-sub">ONE PLANET. ONE HEALTH</p>
+    </div>
+  </div>
+</main>"""
+    return slide_shell(f"{index:02d} Cover", body)
+
+
+def _render_strategic_closing(slide: StrategicSlide, index: int, total: int) -> str:
+    msg = slide.key_message or "Thank You"
+    body = f"""<main class="slide closing-slide" theme="hero">
+  <div class="closing-circle">
+    <h1 class="closing-title">THANK YOU</h1>
+    <p class="closing-subtitle">{esc(msg)}</p>
+    <div class="closing-logo">
+      <p class="closing-logo-text">DANONE</p>
+      <p class="closing-logo-sub">ONE PLANET. ONE HEALTH</p>
+    </div>
+  </div>
+</main>"""
+    return slide_shell(f"{index:02d} Closing", body)
+
+
+def render_decision_grid(slide: StrategicSlide, index: int, total: int) -> str:
+    cards = ""
+    items = slide.must_show or ["Key point to discuss"]
+    # Split items into 2×2 grid pairs
+    mid = (len(items) + 1) // 2
+    for label, group in [("Key Considerations", items[:mid]), ("Action Items", items[mid:])]:
+        cards += f"""<div class="decision-card accent">
+      <h3>{esc(label)}</h3>
+      <ul>{"".join(f"<li>{esc(i)}</li>" for i in group if i)}</ul>
+    </div>"""
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <div class="decision-grid">{cards}</div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_positioning(slide: StrategicSlide, index: int, total: int) -> str:
+    items = slide.must_show or ["Current state", "Future state"]
+    mid = (len(items) + 1) // 2
+    before = items[:mid]
+    after = items[mid:]
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <div class="positioning-row">
+    <div class="positioning-col not">
+      <h3>What It Is Not</h3>
+      <ul>{"".join(f"<li>{esc(i)}</li>" for i in before)}</ul>
+    </div>
+    <div class="positioning-col is">
+      <h3>What It Is</h3>
+      <ul>{"".join(f"<li>{esc(i)}</li>" for i in after)}</ul>
+    </div>
+  </div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_master_storyline(slide: StrategicSlide, index: int, total: int) -> str:
+    items = slide.must_show or ["Vision", "Pillars", "Services", "Experience"]
+    steps = ""
+    for i, item in enumerate(items[:6], 1):
+        steps += f"""<div class="storyline-step">
+      <p class="step-num">{i}</p>
+      <h4>{esc(item)}</h4>
+    </div>"""
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <div class="storyline-flow">{steps}</div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_service_architecture(slide: StrategicSlide, index: int, total: int) -> str:
+    items = slide.must_show or ["Service", "Priority", "Description"]
+    rows = ""
+    for item in items[:6]:
+        rows += f"<tr><td>{esc(item)}</td><td>Core</td><td>Description TBD</td></tr>"
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <table class="service-matrix">
+    <thead><tr><th>Service</th><th>Priority</th><th>Description</th></tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_hero_demo(slide: StrategicSlide, index: int, total: int) -> str:
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <div class="editorial-split">
+    <div class="editorial-image">
+      <div class="img-slot" style="width:100%;height:100%;" data-ratio="4:3"><span>Hero Image</span></div>
+    </div>
+    <div class="editorial-text">
+      <h2 class="headline">{esc(slide.key_message)}</h2>
+      <ul style="margin-top:16px;">{"".join(f"<li>{esc(i)}</li>" for i in slide.must_show[:4])}</ul>
+    </div>
+  </div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_data_flywheel(slide: StrategicSlide, index: int, total: int) -> str:
+    items = slide.must_show or ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6"]
+    steps = ""
+    for i, item in enumerate(items[:6], 1):
+        steps += f"""<div class="flywheel-step">
+      <p class="fw-num">{i}</p>
+      <h4>{esc(item)}</h4>
+    </div>"""
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <div class="flywheel-container">{steps}</div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_experience_space(slide: StrategicSlide, index: int, total: int) -> str:
+    items = slide.must_show or ["Stage 1", "Stage 2", "Stage 3", "Stage 4"]
+    stages = ""
+    for item in items[:4]:
+        stages += f"""<div class="journey-stage">
+      <h4>{esc(item)}</h4>
+      <p>Details to be defined</p>
+    </div>"""
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <div class="experience-journey">{stages}</div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+def render_naming_direction(slide: StrategicSlide, index: int, total: int) -> str:
+    items = slide.must_show or ["Option A", "Option B", "Option C"]
+    rows = "".join(f"<tr><td>{esc(item)}</td><td>Evaluate</td></tr>" for item in items[:5])
+    rec = slide.key_message or "Recommendation TBD"
+    body = f"""<main class="slide" theme="light">
+  <p class="eyebrow">{esc(slide.page_role)}</p>
+  <h2 class="title">{esc(slide.title)}</h2>
+  <table class="naming-table">
+    <thead><tr><th>Option</th><th>Assessment</th></tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
+  <div class="recommendation-box">
+    <h3>Recommendation</h3>
+    <p>{esc(rec)}</p>
+  </div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell(slide.title, body)
+
+
+# ---- End Strategic Render Functions ----
+
+
+def plan_from_strategic(title: str, slides: list[StrategicSlide]) -> list[dict]:
+    """Generate layout plan from strategic/VP review slides."""
+    plan: list[dict] = []
+
+    # 1. Cover
+    plan.append({"intent": "strategic-cover", "slide": slides[0] if slides else StrategicSlide(number=0, title=title)})
+
+    # 2. Each strategic slide with auto-classification
+    for slide in slides:
+        # Skip first slide if it's a cover
+        is_cover = slide.number == 1 and (
+            "cover" in slide.page_role.lower() or "opening" in slide.title.lower()
+        )
+        if is_cover:
+            continue
+        # Route closing slides by page role, number position, or content
+        is_closing = (
+            "closing" in slide.page_role.lower()
+            or "thank" in slide.title.lower()
+            or (slide.number == max(s.number for s in slides) and not slide.must_show)
+        )
+        if is_closing:
+            plan.append({"intent": "strategic-closing", "slide": slide})
+            continue
+
+        intent = classify_strategic_slide(slide)
+        plan.append({"intent": intent, "slide": slide})
+
+    return plan
+
+
+def write_strategic_deck(out_dir: Path, title: str, slides: list[StrategicSlide]) -> None:
+    """Generate HTML deck from strategic/VP review input."""
+    slides_dir = out_dir / "slides"
+    shared_dir = out_dir / "shared"
+    slides_dir.mkdir(parents=True, exist_ok=True)
+    shared_dir.mkdir(parents=True, exist_ok=True)
+    token_css = DEFAULT_TOKENS.read_text(encoding="utf-8")
+    (shared_dir / "tokens.css").write_text(token_css + "\n" + BASE_COMPONENT_CSS + "\n" + _STRATEGIC_CSS, encoding="utf-8")
+
+    plan = plan_from_strategic(title, slides)
+    total = len(plan)
+
+    pages: list[tuple[str, str, str]] = []
+    for i, item in enumerate(plan, start=1):
+        slide = item["slide"]
+        intent = item["intent"]
+        html_content = render_strategic_slide(slide, index=i, total=total, intent=intent)
+        label = slide.title or intent
+        slug = slugify(label)
+        filename = f"{i:02d}-{slug}.html"
+        pages.append((filename, label, html_content))
+
+    for filename, _label, content in pages:
+        (slides_dir / filename).write_text(content, encoding="utf-8")
+
+    manifest = [{"file": f"slides/{filename}", "label": label} for filename, label, _content in pages]
+    (out_dir / "index.html").write_text(render_index(title, manifest), encoding="utf-8")
+    logging.info("Wrote %d strategic slides to %s", total, out_dir)
+
+
 def render_index(title: str, manifest: list[dict]) -> str:
     manifest_json = json.dumps(manifest, ensure_ascii=False, indent=2)
     return f"""<!DOCTYPE html>
@@ -1784,12 +2194,27 @@ def build_deck(
     template: str | Path = DEFAULT_TEMPLATE,
     layout_map: str | Path = DEFAULT_LAYOUT_MAP,
     brand_line: str = "Danone Science Lab",
+    mode: str = "auto",
 ) -> dict:
     markdown = Path(notes_file).read_text(encoding="utf-8")
-    title, scenarios, showcase_flow, summary = parse_notes(markdown)
-    plan = plan_from_notes(title, scenarios, showcase_flow, summary)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Auto-detect mode if not specified
+    if mode == "auto":
+        if re.search(r"^##\s+Slide\s+\d+", markdown, re.MULTILINE):
+            mode = "strategic"
+        else:
+            mode = "scenario"
+
+    if mode == "strategic":
+        title, slides = parse_strategic_notes(markdown)
+        write_strategic_deck(out_dir, title, slides)
+        return {"title": title, "slide_count": len(slides), "mode": "strategic", "plan": []}
+
+    # Scenario mode (existing path)
+    title, scenarios, showcase_flow, summary = parse_notes(markdown)
+    plan = plan_from_notes(title, scenarios, showcase_flow, summary)
     write_html_deck(out_dir, title, scenarios, showcase_flow, summary, brand_line=brand_line)
     if out_plan is not None:
         out_plan = Path(out_plan)
@@ -1839,6 +2264,8 @@ def main() -> None:
     parser.add_argument("--template", default=str(DEFAULT_TEMPLATE))
     parser.add_argument("--layout-map", default=str(DEFAULT_LAYOUT_MAP))
     parser.add_argument("--brand-line", default="Danone Science Lab", help="Footer brand line (e.g. 'Brand X · Danone')")
+    parser.add_argument("--mode", choices=["auto", "scenario", "strategic"], default="auto",
+                        help="Deck mode: scenario (science lab) or strategic (VP review). Auto-detects by default.")
     args = parser.parse_args()
     result = build_deck(
         notes_file=args.notes,
@@ -1848,10 +2275,14 @@ def main() -> None:
         template=args.template,
         layout_map=args.layout_map,
         brand_line=args.brand_line,
+        mode=args.mode,
     )
-    logging.info("Wrote %s (%d HTML slides, %d scenarios)", args.out_dir, result["slide_count"], result["scenario_count"])
+    if result.get("mode") == "strategic":
+        logging.info("Wrote %s (%d strategic slides)", args.out_dir, result["slide_count"])
+    else:
+        logging.info("Wrote %s (%d HTML slides, %d scenarios)", args.out_dir, result["slide_count"], result.get("scenario_count", 0))
     if args.native_pptx:
-        logging.info("Wrote native %s (%d slides)", args.native_pptx, len(result["plan"]))
+        logging.info("Wrote native %s (%d slides)", args.native_pptx, len(result.get("plan", [])))
     if args.out_plan:
         logging.info("Wrote plan %s", args.out_plan)
 
