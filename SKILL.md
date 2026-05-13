@@ -1,164 +1,218 @@
 ---
 name: shida-danone-ppt-skill
-description: Use when creating Danone-inspired corporate presentation decks, ESG reports, product launch decks, Danone-style HTML slides, PDF exports, image PPTX exports, or editable PPTX exports.
-version: 3.1.0
+description: Use when creating Danone-branded presentations. Generates editable PPTX, HTML slide decks, or PDF. Photo-first or strategic layouts, multi-color themes, "One Planet. One Health" brand DNA.
+version: 6.0.0
 author: Shida Fu
-tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf]
+tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf, strategic]
 ---
 
 # Shida Danone PPT Skill
 
-> Generate Danone-style corporate decks. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. Prefer real template-native PPTX when editability matters; use HTML pipeline for PDF, image PPTX, and fallback pages.
+> Generate Danone-style corporate decks from any input (brief, outline, script, or structured notes). Output as editable PPTX, HTML deck, or PDF — chosen by the user.
 
 ## When to use
 
 - Danone / corporate-style reports, ESG decks, product launches
-- Deliverables needing PDF + PPTX
-- Personal talks -> use guizang-ppt-skill
-- Creative prototypes -> use huashu-design
-- Dark dashboards -> Danone is light-first
+- Deliverables needing editable PPTX or printable PDF
+- VP review / strategic alignment / positioning decks
+- Personal talks → use `guizang-ppt-skill` instead
+- Dark dashboards → Danone is light-first
+- Creative prototypes → use `huashu-design` instead
 
-## Output paths
+## Step 0: Detect deck type
 
-### 1. Native editable PPTX (preferred for editability)
+Read the input. Determine which mode:
+
+| Mode | Trigger | Format |
+|------|---------|--------|
+| **Strategic / VP Review** | Headings like `## Slide N — Title`, `## Slide N：Title`, or content about positioning, storyline, naming, decision | Outline with slide-by-slide structure |
+| **Scenario / Science Lab** | Headings like `## 场景 N｜Name` | Scenario-based notes with target users, pain points, hardware, data, indicators, products |
+| **Free-form** | Anything else | Brief, article, script, bullet list |
+
+### Routing
+
+- **Free-form** → normalize via `scripts/input_adapter.py` → detect type → proceed
+- **Scenario / Science Lab** → parse via `notes_to_danone_deck.py` with `--mode scenario`
+- **Strategic / VP Review** → parse via `notes_to_danone_deck.py` with `--mode strategic`
+
+Each mode uses a different parser and layout registry. Do NOT force strategic content into scenario templates, or vice versa.
+
+---
+
+## Workflow
+
+### Step 1: Clarify output format + accept input
+
+Ask the user: **which format?**
+- **Editable PPTX** — real Danone template, text editable in PowerPoint
+- **HTML deck** — browser preview, full brand styling, interactive navigation
+- **PDF** — vector export from HTML deck (printable, searchable)
+- **All** — generate all three
+
+Accept **any input format**:
+- Free-form topics or bullet outline → normalize via `scripts/input_adapter.py`
+- Long script or article → chunk into slides via `scripts/input_adapter.py`
+- Structured notes → auto-detect deck type in Step 0
+
+### Step 2: Parse and plan
+
+Normalize input to structured Markdown (if free-form):
 ```bash
-python scripts/brief_to_native_deck.py --title "X" --brief-file brief.md --slides 6 --out deck.pptx
+python scripts/input_adapter.py --input brief.md --out /tmp/normalized.md
 ```
-Copies real template layouts from `Danone Real Templates/Standard Danone Template.pptx`, fills native placeholders. For structured notes, use `scripts/notes_to_danone_deck.py`.
 
-### 2. HTML deck (preferred for visual fidelity)
+Parse with the correct mode:
 ```bash
-python scripts/notes_to_danone_deck.py --notes notes.md --out-dir ./deck --brand-line "Brand X · Danone"
-```
-Generates 1280x720px HTML slides with full brand system (photo placeholders, data viz, multi-color themes).
+# Strategic / VP Review
+python scripts/notes_to_danone_deck.py \
+  --notes /tmp/normalized.md \
+  --out-dir ./deck \
+  --mode strategic \
+  --brand-line "Brand X · Danone"
 
-### 3. PDF
+# Scenario / Science Lab
+python scripts/notes_to_danone_deck.py \
+  --notes /tmp/normalized.md \
+  --out-dir ./deck \
+  --mode scenario \
+  --brand-line "Brand X · Danone"
+```
+
+Decide slide count, theme rhythm, and layout assignments. **Plan theme rhythm** before generating:
+- Cover = hero, Closing = hero
+- No 3+ consecutive same-theme pages
+- 6+ page decks: at least 1 hero page per 3-4 content pages
+- See `references/layouts.md` for rhythm planning table
+
+### Step 3: Generate slides
+
+Read the reference files for component and layout specs:
+- `references/layouts.md` — layout skeletons and rhythm rules
+- `references/themes.md` — color presets and font stack
+- `references/components.md` — exact component specs
+
+Generate the chosen format:
+
+| Format | Command | Notes |
+|--------|---------|-------|
+| **HTML deck** | Already done in Step 2 | Opens via `./deck/index.html` |
+| **Editable PPTX** | Add `--native-pptx ./deck/deck.pptx` to Step 2 command | Clones real Danone template |
+| **PDF** | See Step 5 | Export from HTML deck |
+
+### Step 4: Visual verification
+
+Run through `references/visual-verification.md`:
+1. **Cover**: solid `#005EB8` bg + white circle + centered title
+2. **Theme rhythm**: grep theme classes, verify alternation
+3. **Fonts**: headlines show serif (Playfair Display), body shows sans-serif (Inter)
+4. **Components**: accent bars match theme, product cards are white + accent top
+5. **Closing**: same format as cover with "THANK YOU"
+
+### Step 5: Export (if PDF or image PPTX requested)
+
 ```bash
-node scripts/export_deck_pdf.mjs --slides slides/ --out deck.pdf --width 1280 --height 720
+# HTML → PDF (vector, searchable)
+node scripts/export_deck_pdf.mjs --slides ./deck/slides/ --out ./deck/deck.pdf --width 1280 --height 720
+
+# HTML → Image PPTX (visual fidelity, not editable)
+node scripts/export_deck_pptx.mjs --slides ./deck/slides/ --out ./deck/deck-image.pptx --width 1280 --height 720
 ```
 
-### 4. Image PPTX
-```bash
-node scripts/export_deck_pptx.mjs --slides slides/ --out deck.pptx --width 1280 --height 720
+### Step 6: Self-check
+
+Run through `references/checklist.md` (P0/P1/P2/P3 graded). All P0 items must pass before delivery.
+
+---
+
+## Strategic Deck Layouts (VP Review Mode)
+
+When the parser detects `## Slide N — Title` format, it routes to the **strategic layout registry**. Each slide type gets a named `render_XXX()` function:
+
+| Layout Intent | Render Function | Visual Pattern |
+|---------------|-----------------|----------------|
+| `cover` | `render_cover()` | Blue bg + white circle + centered title |
+| `closing` | `render_closing()` | Same as cover, "THANK YOU" |
+| `decision-grid` | `render_decision_grid()` | 2×2 or 1×4 decision cards (positioning/storyline/hero/naming) |
+| `positioning` | `render_positioning()` | Before/After two-column contrast ("What DHT Is Not" vs "What DHT Is") |
+| `master-storyline` | `render_master_storyline()` | Horizontal flow: Vision → Pillars → Services → Demos → Flywheel → Experience |
+| `service-architecture` | `render_service_architecture()` | Matrix table with colored priority tags (Hero/Core/Future) |
+| `hero-demo` | `render_hero_demo()` | Two-column split hero (invisible vs visible, or compare two options) |
+| `data-flywheel` | `render_data_flywheel()` | 6-step circular loop with guardrail warning bar |
+| `experience-space` | `render_experience_space()` | 4-column journey map with arrow connectors |
+| `naming-direction` | `render_naming_direction()` | Table + recommendation blocks + avoid list + VP decision bar |
+
+### Strategic slide anatomy
+
+Each strategic slide in the input Markdown has this structure:
+
+```markdown
+## Slide N — Title
+
+### Page role
+One sentence: why this slide exists.
+
+### Key message
+The single takeaway the VP should remember.
+
+### Must show on slide
+Bullets, tables, or structured data that MUST appear.
+
+### Recommended visual
+One line describing the layout pattern (maps to a layout intent above).
+
+### Speaker script
+(Optional) What the presenter says.
 ```
 
-## Design rules
+The parser extracts these sections and maps `Recommended visual` → layout intent → `render_XXX()`.
 
-### Brand DNA (non-negotiable)
-- **Hero cover**: Opening Slide Title format — solid `#005EB8` background, large centered white circle (`border-radius: 50%`), title in blue `#005EB8` centered inside circle, subtitle above title, DANONE logo + "One Planet. One Health" at bottom of circle
-- **Slogan**: "One Planet. One Health" must appear on cover + footer
-- **Photography-first**: every page should have photo placeholders; Danone is not text-only
-- **Multi-color themes**: match category to colorway
-  - Gut/Natural -> Green `#00A651`
-  - Sport/Physical -> Orange `#F26522`
-  - Clinical/Baby -> Pink `#E6007E`
-  - Water/Hydration -> Teal `#00B2A9`
-  - Corporate/Default -> Blue `#005EB8`
+---
 
-### Typography
-- **Display / Headlines**: `Playfair Display` (Google Fonts, serif) — magazine editorial feel
-- **Body**: `Inter` (Google Fonts, sans-serif) — clean, modern, highly legible
-- **Chinese**: `Noto Sans SC` (Google Fonts)
-- **Mono / Labels / Data**: `IBM Plex Mono` — for metrics, page numbers, metadata
-- **Fallback chain**: `"Playfair Display", Georgia, serif` for display; `"Inter", "Noto Sans SC", "Microsoft YaHei", sans-serif` for body
-- **Load via Google Fonts CDN** in slide shell: `https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap`
-- **Font features**: `font-feature-settings: "tnum"` for tabular numerals; `-webkit-font-smoothing: antialiased`
-- **DO NOT use**: Arial Narrow, Arial, or generic system sans-serif for headlines — they destroy brand quality
+## Scenario Deck Layouts (Science Lab Mode)
 
-### Components
+When the parser detects `## 场景 N｜Name` format, it routes to the **scenario layout registry**:
 
-#### Cards
-- Flat, no shadows, rounded 12px
-- **Narrative cards**: top accent bar (4px theme color)
-- **Product link cards**: white background + top accent bar (4px theme color), not solid color blocks
+| Layout Intent | Render Function | Visual Pattern |
+|---------------|-----------------|----------------|
+| `opening-cover` | `render_cover()` | Blue bg + white circle |
+| `narrative-frame` | `render_narrative_frame()` | 3-column narrative cards |
+| `three-column` | `render_scenario()` | Pain points / data / products |
+| `flow` | `render_flow()` | 5-step process with arrows |
+| `closing` | `render_closing()` | Same as cover, "THANK YOU" |
 
-#### Buttons
-- Pill shape (`border-radius: 6.25rem`)
+---
 
-#### Images
-- `border-radius: .75rem` or circular (`50%`)
-- **Circular placeholders**: 120px/64px diameter, 3px/2px theme color border, soft tint background
-- **Photo strip**: row of 80px circular images for product showcases
+## Resource Files
 
-#### Bullets
-- Colored dot matching theme accent
+| File | Read when... |
+|------|-------------|
+| `references/checklist.md` | Step 6 self-check; verifying deck quality before delivery |
+| `references/components.md` | Step 3 generating slides; need exact component CSS specs |
+| `references/layouts.md` | Step 2 planning; deciding slide layouts and theme rhythm |
+| `references/themes.md` | Step 2 planning; choosing color presets and verifying brand colors |
+| `references/visual-verification.md` | Step 4; verifying generated deck looks correct |
 
-#### Table header
-- `#CCDFF1` with `#005EB8` bottom border
+---
 
-#### Quote blocks
-- Left accent border (4px theme color)
-- **Large decorative quote mark** (Georgia serif, 48px, 25% opacity) at top-left
-- Italic text for the quote
-- Normal text for attribution below
+## Core Principles
 
-#### Data visualization placeholders
-- **Bar charts**: 28px height, pill-shaped, theme color fill on soft background
-- **Ring charts**: 100px diameter, conic-gradient, white center hole, percentage text
-- **Big metrics**: 64px display font, theme color, with unit label
-- **No fake data**: if the user has not provided real numbers, use gray empty placeholders labeled "数据待补充" / "Data TBD" — never hardcode percentages like 87%, 92%
+1. **Content-appropriate layout**: strategic decks use decision matrices and storyline flows; science lab decks use scenario cards and data viz
+2. **Photography-first**: every page needs a photo placeholder or data viz (strategic decks may use icon/data-heavy layouts instead)
+3. **Multi-color themes**: match content to color (Gut=Green, Sport=Orange, Clinical=Pink, Water=Teal, Corporate=Blue)
+4. **No fake data**: use "Data TBD" placeholders, never hardcode percentages
+5. **One Planet. One Health**: on cover, every footer, and closing page
+6. **Cover/Closing format**: solid `#005EB8` bg + white circle + centered title + DANONE logo
+7. **No decorative illustrations**: Danone is photography / data-viz driven
 
-#### Flow steps
-- 5-column grid, soft background
-- **Top accent bar** (5px theme color)
-- **Circular arrow connectors** between steps (28px circle + triangle)
-- Step number in display font
+---
 
-#### Footer
-- Chapter color bar (4px) at bottom edge
-- "One Planet. One Health" on every page
-- Page numbering `NN / TT`
+## Common mistakes
 
-### Closing page
-- Closing Slide Title format — solid `#005EB8` background, large centered white circle (`border-radius: 50%`), "THANK YOU" in blue `#005EB8` centered inside circle, optional subtitle below, DANONE logo + "One Planet. One Health" at bottom of circle
-
-## Self-check
-
-### Structure (before generating)
-- [ ] Content organized as Opening → Body → Closing
-- [ ] Every page has a photo placeholder or data viz — no pure-text pages
-- [ ] Each scenario/category uses a distinct theme color (not all blue)
-
-### Cover
-- [ ] Cover uses Opening Slide Title format (solid blue bg + white circle + centered blue title + DANONE logo)
-- [ ] "One Planet. One Health" appears on cover
-- [ ] Subtitle/date positioned above the main title
-
-### Body pages
-- [ ] Cards have top accent bar matching theme color
-- [ ] Product link cards are white with accent top bar (not solid color blocks)
-- [ ] Data visualization uses real numbers from input, or gray "Data TBD" placeholders (no fake percentages)
-- [ ] Quote blocks have decorative quote mark (Georgia serif, 48px, 25% opacity)
-- [ ] Flow steps have circular arrow connectors between them
-- [ ] Circular images have theme-colored borders (3px for large, 2px for small)
-
-### Closing
-- [ ] Thank You page uses Closing Slide Title format (blue bg + white circle + THANK YOU + DANONE logo)
-- [ ] "One Planet. One Health" appears on closing page
-
-### Global
-- [ ] Footer has chapter color bar (4px) on every page
-- [ ] No decorative illustrations — Danone is photography-driven
-- [ ] No gradient overlays on cover or closing — solid `#005EB8` only
-- [ ] Fonts loaded correctly: Playfair Display headlines, Inter body, IBM Plex Mono for data
-- [ ] Theme rhythm: no more than 3 consecutive pages of the same theme (light/dark/hero)
-- [ ] 6+ page decks have at least 1 hero page (cover, chapter divider, or big quote)
-- [ ] Image placeholders use `.frame-img` or `.img-slot`, not colored-circle wireframes
-- [ ] Visual depth exists: subtle gradients, shadows, or backdrop-blur on overlays
-- [ ] No pure-flat layouts — every page has at least one depth element
-
-## Common mistakes to avoid
-
-- **All-blue decks**: Don't give every page the corporate blue. Different scenarios must use different theme colors.
-- **Solid product cards**: Product link cards must be white background + colored top bar. Never use solid color blocks.
-- **Decorative illustrations**: Danone is photography-driven. Do not add icons, illustrations, or clipart as decorative elements.
-- **Fake data**: Never hardcode percentages (87%, 92%, etc.) or bar widths. Use real input data or gray "Data TBD" placeholders.
-- **Wrong cover format**: Cover must use Opening Slide Title format (white circle on blue), not a generic gradient hero.
-- **Missing slogan**: "One Planet. One Health" must appear on cover, footer of every page, and closing page.
-- **Text-only pages**: Every slide needs either a photo placeholder or a data visualization element.
-- **Arial Narrow / system fonts**: Never use Arial Narrow or generic system sans-serif for headlines. Load Playfair Display + Inter via Google Fonts CDN.
-- **Flat layouts without depth**: Don't use pure flat colors everywhere. Add subtle gradients, shadows, and backdrop-blur for visual hierarchy.
-- **Identical card grids**: Avoid repeating the same card layout on every page. Use asymmetric layouts, big quotes, stat grids, and image-led pages for rhythm.
-- **Wireframe image placeholders**: Don't use colored-circle wireframes for photos. Use `.frame-img` containers with `object-fit: cover` and editorial-style `.img-slot` placeholders.
-- **Monotonous theme**: Every slide must have a theme class (`light` / `dark` / `hero`). Continuous 3+ pages of the same theme causes visual fatigue.
-- **Missing hero pages**: Decks with 6+ slides must include at least 1 hero page (cover, chapter divider, or big quote) every 3-4 content pages.
+- All-blue decks (scenarios must use different theme colors)
+- Solid product cards (must be white + accent top bar)
+- Fake data (hardcoded percentages without user input)
+- Wrong cover format (must use Opening Slide Title, not gradient hero)
+- Missing "One Planet. One Health" slogan
+- Monotonous theme (every slide needs light/dark/hero class)
+- **Forcing strategic content into scenario templates** (VP review decks need decision grids, not 3-column scenario cards)
+- **All pages using the same layout** (strategic decks need varied layouts: grids, tables, flows, comparisons)
