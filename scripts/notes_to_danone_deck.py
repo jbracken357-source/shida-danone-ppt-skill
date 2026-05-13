@@ -38,6 +38,11 @@ THEMES = {
         "soft": "var(--dn-pink-soft)",
         "dark": "var(--dn-pink-dark)",
     },
+    "water": {
+        "accent": "var(--dn-teal)",
+        "soft": "var(--dn-teal-soft)",
+        "dark": "var(--dn-teal-dark)",
+    },
 }
 
 DEFAULT_THEME = {
@@ -52,10 +57,10 @@ def pick_theme(scenario_name: str) -> dict:
     name = scenario_name.lower()
     if any(k in name for k in ("gut", "肠道", "digest", "microbiome")):
         return THEMES["gut"]
-    if any(k in name for k in ("physical", "sport", "运动", "recovery", "hydrat", "汗液")):
-        return THEMES["physical"]
     if any(k in name for k in ("clinical", "tube", "medical", "nutrison", "管饲", "康复")):
         return THEMES["clinical"]
+    if any(k in name for k in ("水", "hydration", "water", "汗液", "sport", "physical", "运动", "recovery")):
+        return THEMES["water"]
     return DEFAULT_THEME
 
 
@@ -1200,44 +1205,81 @@ def parse_notes(markdown: str) -> tuple[str, list[Scenario], list[str], str]:
 
 
 def plan_from_notes(title: str, scenarios: list[Scenario], showcase_flow: list[str], summary: str) -> list[dict]:
+    """Generate a layout plan based on content analysis, not hardcoded sequence.
+
+    Each scenario is analyzed for richness and assigned the best layout:
+    - 4+ data points → stat-grid
+    - core_message present → scenario gets a big-quote divider after it
+    - Default → three-column
+    """
     if not scenarios:
         raise ValueError("No scenario sections found. Expected headings like '## 场景 1｜Gut Health'.")
 
-    plan: list[dict] = [
-        {
-            "intent": "opening-cover",
-            "content": {"title": "Danone Science Lab", "subtitle_or_date": "DHT Lab smoke deck"},
+    plan: list[dict] = []
+
+    # 1. Cover
+    plan.append({"intent": "cover", "theme": "hero"})
+
+    # 2. Big message summary slide
+    plan.append({
+        "intent": "big-message",
+        "theme": "light",
+        "content": {
+            "headline": "Three measurable nutrition journeys",
+            "supporting_text": " / ".join(
+                scenario.shorthand or scenario.name for scenario in scenarios[:3]
+            ),
         },
-        {
-            "intent": "big-message",
-            "content": {
-                "headline": "Three measurable nutrition journeys",
-                "supporting_text": " / ".join(
-                    scenario.shorthand or scenario.name for scenario in scenarios[:3]
-                ),
-            },
-        },
-    ]
-    for scenario in scenarios[:3]:
-        plan.append(
-            {
-                "intent": "three-column",
+    })
+
+    # 3. Scenario slides with smart layout selection
+    for scenario in scenarios:
+        data_items = scenario.indicators or scenario.collected_data
+        has_rich_data = len(data_items) >= 3
+        has_core_msg = bool(scenario.core_message and "待补充" not in scenario.core_message)
+
+        if has_rich_data and has_core_msg:
+            # Rich scenario: full three-column + stats
+            plan.append({
+                "intent": "scenario",
+                "theme": "light",
+                "scenario": scenario,
+            })
+            # Insert big-quote divider if core message is strong
+            plan.append({
+                "intent": "big-quote",
+                "theme": "dark",
                 "content": {
-                    "title": f"{scenario.name} — {trim(scenario.hardware, 80)}",
-                    "column_1": "User pain point\n" + bullet_text(scenario.pain_points, "待补充用户痛点", 4),
-                    "column_2": "Invisible data made visible\n" + bullet_text(scenario.indicators or scenario.collected_data, "待补充数据指标", 4),
-                    "column_3": "Danone product link\n" + bullet_text(scenario.products, "待补充 Danone 产品", 3),
+                    "quote": scenario.core_message,
+                    "source": scenario.shorthand or scenario.name,
                 },
-            }
-        )
-    plan.append(
-        {
-            "intent": "closing",
-            "content": {
-                "title": "Make nutrition measurable, actionable, and personal.",
-            },
-        }
-    )
+            })
+        elif has_rich_data:
+            plan.append({
+                "intent": "stat-grid",
+                "theme": "light",
+                "content": {
+                    "title": scenario.name,
+                    "stats": [
+                        {"number": "--", "label": item, "desc": ""}
+                        for item in data_items[:6]
+                    ],
+                },
+            })
+        else:
+            plan.append({
+                "intent": "scenario",
+                "theme": "light",
+                "scenario": scenario,
+            })
+
+    # 4. Flow slide if showcase flow exists
+    if showcase_flow:
+        plan.append({"intent": "flow", "theme": "light"})
+
+    # 5. Closing
+    plan.append({"intent": "closing", "theme": "hero"})
+
     return plan
 
 
@@ -1248,6 +1290,34 @@ def esc(value: str) -> str:
 def render_bullets(items: list[str], fallback: str = "待补充", limit: int = 4) -> str:
     chosen = [item for item in items if item][:limit] or [fallback]
     return "\n".join(f"<li>{esc(trim(item, 120))}</li>" for item in chosen)
+
+
+def parse_image_hints(text: str) -> list[dict]:
+    """Extract [img: description] or [photo: description] markers from text.
+
+    Users can place these anywhere in their outline to mark where images belong.
+    """
+    pattern = re.compile(r"\[(?:img|photo|image):\s*([^\]]+)\]", re.IGNORECASE)
+    hints: list[dict] = []
+    for match in pattern.finditer(text):
+        raw = match.group(1).strip()
+        # Check if it's a path:label format like "[img: assets/photo.jpg: Product Shot]"
+        if ":" in raw and not raw.endswith(":"):
+            parts = raw.split(":", 1)
+            if Path(parts[0].strip()).suffix:  # looks like a file path
+                hints.append({"path": parts[0].strip(), "label": parts[1].strip()})
+                continue
+        hints.append({"path": "", "label": raw})
+    return hints
+
+
+def render_image_slot(hint: dict, size: str = "64px", ratio: str = "1:1") -> str:
+    """Render an image placeholder — with real image if path provided."""
+    path = hint.get("path", "")
+    label = hint.get("label", "Photo")
+    if path:
+        return f'<img class="frame-img" src="{esc(path)}" alt="{esc(label)}" style="width:{size};height:{size};border-radius:50%;object-fit:cover;">'
+    return f'<div class="img-slot" style="width:{size};height:{size};border-radius:50%;" data-ratio="{ratio}"><span>{esc(label)}</span></div>'
 
 
 def slide_shell(title: str, body: str, extra_css: str = "") -> str:
@@ -1422,7 +1492,106 @@ def render_thankyou(summary: str, index: int = 7, total: int = 7, brand_line: st
     </div>
   </div>
 </main>"""
-    return slide_shell("07 Thank You", body)
+    return slide_shell("Thank You", body)
+
+
+def render_big_message(headline: str, supporting: str = "", theme_class: str = "light",
+                       accent_color: str = "var(--dn-blue)", index: int = 0, total: int = 1) -> str:
+    """Single takeaway — oversized headline + optional support text."""
+    ghost = '<div class="ghost-number">01</div>' if theme_class == "dark" else ""
+    sub_color = "rgba(255,255,255,0.78)" if theme_class == "dark" else "var(--dn-text-secondary)"
+    sub_html = f'<p style="margin-top:24px;font-size:22px;line-height:1.35;max-width:640px;color:{sub_color};">{esc(supporting)}</p>' if supporting else ""
+    body = f"""<main class="slide {'slide-dark' if theme_class == 'dark' else ''}" theme="{theme_class}">
+  {ghost}
+  <p class="eyebrow" style="color:{'rgba(255,255,255,0.6)' if theme_class == 'dark' else 'var(--dn-blue)'}">Key Message</p>
+  <h2 class="title" style="font-size:56px;line-height:1.0;margin-top:48px;">{esc(headline)}</h2>
+  {sub_html}
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell("Big Message", body)
+
+
+def render_big_quote(quote: str, source: str = "", theme_class: str = "dark",
+                     index: int = 0, total: int = 1) -> str:
+    """Full-page centered quote for visual breathing."""
+    body = f"""<main class="slide {'slide-dark' if theme_class == 'dark' else ''}" theme="{theme_class}">
+  <div class="big-quote-slide">
+    <p class="big-quote-text">&ldquo;{esc(quote)}&rdquo;</p>
+    {f'<p class="big-quote-source">{esc(source)}</p>' if source else ''}
+  </div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell("Big Quote", body)
+
+
+def render_stat_grid(stats: list[dict], theme_class: str = "light",
+                     index: int = 0, total: int = 1) -> str:
+    """Big number data highlights — stat grid with metric cells."""
+    grid_items = ""
+    for s in stats[:6]:
+        grid_items += f"""<div class="stat-cell">
+      <p class="stat-number" style="color:{s.get('color', 'var(--dn-blue)')}">{esc(s['number'])}</p>
+      <p class="stat-label">{esc(s['label'])}</p>
+      {f'<p class="stat-desc">{esc(s["desc"])}</p>' if s.get("desc") else ''}
+    </div>"""
+    cols = min(len(stats), 3)
+    body = f"""<main class="slide {'slide-dark' if theme_class == 'dark' else ''}" theme="{theme_class}">
+  <p class="eyebrow" style="color:{'rgba(255,255,255,0.6)' if theme_class == 'dark' else 'var(--dn-blue)'}">Data Highlights</p>
+  <h2 class="title">Key Metrics</h2>
+  <div class="stat-grid" style="grid-template-columns:repeat({cols},1fr);">{grid_items}</div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell("Stat Grid", body)
+
+
+def render_compare(before_title: str, before_items: list[str],
+                   after_title: str, after_items: list[str],
+                   theme_class: str = "light", accent_color: str = "var(--dn-blue)",
+                   index: int = 0, total: int = 1) -> str:
+    """Before/After two-column contrast."""
+    body = f"""<main class="slide {'slide-dark' if theme_class == 'dark' else ''}" theme="{theme_class}">
+  <p class="eyebrow" style="color:{'rgba(255,255,255,0.6)' if theme_class == 'dark' else 'var(--dn-blue)'}">Comparison</p>
+  <h2 class="title">Before vs After</h2>
+  <div class="compare-grid">
+    <div class="compare-card before">
+      <p class="compare-label">Before</p>
+      <h3>{esc(before_title)}</h3>
+      <ul>{"".join(f"<li>{esc(i)}</li>" for i in before_items[:5])}</ul>
+    </div>
+    <div class="compare-card after" style="background:{accent_color};">
+      <p class="compare-label">After</p>
+      <h3>{esc(after_title)}</h3>
+      <ul>{"".join(f"<li>{esc(i)}</li>" for i in after_items[:5])}</ul>
+    </div>
+  </div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell("Compare", body)
+
+
+def render_editorial_split(headline: str, body_text: str, image_label: str = "Photo",
+                           image_path: str = "", reverse: bool = False,
+                           theme_class: str = "light", index: int = 0, total: int = 1) -> str:
+    """Image + Text editorial split layout."""
+    reverse_class = " reverse" if reverse else ""
+    if image_path:
+        img_content = f'<img class="frame-img" src="{esc(image_path)}" alt="{esc(image_label)}">'
+    else:
+        img_content = f'<div class="img-slot" style="width:100%;height:100%;" data-ratio="4:3"><span>{esc(image_label)}</span></div>'
+    text_color = "rgba(255,255,255,0.78)" if theme_class == "dark" else "var(--dn-text-secondary)"
+    eyebrow_color = "rgba(255,255,255,0.6)" if theme_class == "dark" else "var(--dn-blue)"
+    body = f"""<main class="slide {'slide-dark' if theme_class == 'dark' else ''}" theme="{theme_class}">
+  <div class="editorial-split{reverse_class}">
+    <div class="editorial-image">{img_content}</div>
+    <div class="editorial-text">
+      <p class="eyebrow" style="color:{eyebrow_color};">Feature</p>
+      <h2 class="headline">{esc(headline)}</h2>
+      <p style="margin-top:18px;font-size:20px;line-height:1.4;color:{text_color};">{esc(body_text)}</p>
+    </div>
+  </div>
+  <div class="footer"><p>One Planet. One Health</p><p>{index:02d} / {total:02d}</p></div>
+</main>"""
+    return slide_shell("Editorial Split", body)
 
 
 def render_index(title: str, manifest: list[dict]) -> str:
@@ -1500,6 +1669,12 @@ def render_index(title: str, manifest: list[dict]) -> str:
 
 
 def write_html_deck(out_dir: Path, title: str, scenarios: list[Scenario], showcase_flow: list[str], summary: str, brand_line: str = "Danone Science Lab") -> None:
+    """Generate HTML deck using content-driven layout selection.
+
+    Routes each plan item to the appropriate render function.
+    Theme alternates light → dark → hero automatically.
+    Slide count matches content, not hardcoded.
+    """
     slides_dir = out_dir / "slides"
     shared_dir = out_dir / "shared"
     slides_dir.mkdir(parents=True, exist_ok=True)
@@ -1507,21 +1682,73 @@ def write_html_deck(out_dir: Path, title: str, scenarios: list[Scenario], showca
     token_css = DEFAULT_TOKENS.read_text(encoding="utf-8")
     (shared_dir / "tokens.css").write_text(token_css + "\n" + BASE_COMPONENT_CSS, encoding="utf-8")
 
-    total_slides = 2 + min(len(scenarios), 3) + 2  # cover + narrative + scenarios + flow + thankyou
+    plan = plan_from_notes(title, scenarios, showcase_flow, summary)
+    total = len(plan)
 
-    pages = [
-        ("01-cover.html", "Cover", render_cover(title, summary, scenarios, total=total_slides, brand_line=brand_line)),
-        ("02-narrative-frame.html", "Narrative", render_summary(summary, scenarios, total=total_slides)),
-    ]
-    for offset, scenario in enumerate(scenarios[:3], start=3):
-        pages.append((f"{offset:02d}-{slugify(scenario.name)}.html", scenario.name, render_scenario(offset, scenario, total=total_slides)))
-    pages.append(("06-showcase-flow.html", "Showcase Flow", render_flow(showcase_flow, summary, index=6, total=total_slides)))
-    pages.append(("07-thank-you.html", "Thank You", render_thankyou(summary, index=7, total=total_slides, brand_line=brand_line)))
+    pages: list[tuple[str, str, str]] = []
+    for i, slide in enumerate(plan, start=1):
+        intent = slide["intent"]
+        theme_class = slide.get("theme", "light")
+        idx = i
+
+        if intent == "cover":
+            html_content = render_cover(title, summary, scenarios, total=total, brand_line=brand_line)
+            label = "Cover"
+        elif intent == "big-message":
+            content = slide.get("content", {})
+            html_content = render_big_message(
+                headline=content.get("headline", ""),
+                supporting=content.get("supporting_text", ""),
+                theme_class=theme_class,
+                index=idx, total=total,
+            )
+            label = "Key Message"
+        elif intent == "scenario":
+            scenario = slide["scenario"]
+            html_content = render_scenario(idx, scenario, total=total)
+            label = scenario.name
+        elif intent == "big-quote":
+            content = slide.get("content", {})
+            html_content = render_big_quote(
+                quote=content.get("quote", ""),
+                source=content.get("source", ""),
+                theme_class="dark",  # big-quote always dark
+                index=idx, total=total,
+            )
+            label = "Quote"
+        elif intent == "stat-grid":
+            content = slide.get("content", {})
+            theme = pick_theme(content.get("title", ""))
+            accent = theme["accent"]
+            stats = content.get("stats", [])
+            for s in stats:
+                if "color" not in s:
+                    s["color"] = accent
+            html_content = render_stat_grid(
+                stats=stats,
+                theme_class=theme_class,
+                index=idx, total=total,
+            )
+            label = content.get("title", "Data")
+        elif intent == "flow":
+            html_content = render_flow(showcase_flow, summary, index=idx, total=total)
+            label = "Flow"
+        elif intent == "closing":
+            html_content = render_thankyou(summary, index=idx, total=total, brand_line=brand_line)
+            label = "Thank You"
+        else:
+            continue  # skip unknown intents gracefully
+
+        slug = slugify(label)
+        filename = f"{idx:02d}-{slug}.html"
+        pages.append((filename, label, html_content))
 
     for filename, _label, content in pages:
         (slides_dir / filename).write_text(content, encoding="utf-8")
+
     manifest = [{"file": f"slides/{filename}", "label": label} for filename, label, _content in pages]
     (out_dir / "index.html").write_text(render_index(title, manifest), encoding="utf-8")
+    logging.info("Wrote %d slides to %s", total, out_dir)
 
 
 def build_deck(
@@ -1544,9 +1771,38 @@ def build_deck(
         out_plan.parent.mkdir(parents=True, exist_ok=True)
         out_plan.write_text(json.dumps({"slides": plan}, ensure_ascii=False, indent=2), encoding="utf-8")
     if native_pptx is not None:
-        builder = load_native_builder()
-        builder.build_presentation(template, layout_map, plan, native_pptx)
-    return {"title": title, "scenario_count": len(scenarios), "slide_count": 7, "plan": plan}
+        # Filter plan to only include intents supported by native PPTX
+        native_intents = {"opening-cover", "big-message", "two-column", "three-column", "closing", "contents"}
+        native_plan = []
+        for slide in plan:
+            intent = slide["intent"]
+            # Map HTML-only intents to closest native equivalents
+            if intent == "cover":
+                native_plan.append({"intent": "opening-cover", "content": {"title": title, "subtitle_or_date": brand_line}})
+            elif intent == "scenario":
+                scenario = slide["scenario"]
+                native_plan.append({
+                    "intent": "three-column",
+                    "content": {
+                        "title": f"{scenario.name} — {trim(scenario.hardware, 80)}",
+                        "column_1": "User pain point\n" + bullet_text(scenario.pain_points, "待补充用户痛点", 4),
+                        "column_2": "Invisible data made visible\n" + bullet_text(scenario.indicators or scenario.collected_data, "待补充数据指标", 4),
+                        "column_3": "Danone product link\n" + bullet_text(scenario.products, "待补充 Danone 产品", 3),
+                    },
+                })
+            elif intent == "closing":
+                native_plan.append({
+                    "intent": "closing",
+                    "content": {"title": "Make nutrition measurable, actionable, and personal."},
+                })
+            elif intent in native_intents:
+                native_plan.append({"intent": intent, "content": slide.get("content", {})})
+            # Skip: stat-grid, big-quote, flow (no native equivalent)
+
+        if native_plan:
+            builder = load_native_builder()
+            builder.build_presentation(template, layout_map, native_plan, native_pptx)
+    return {"title": title, "scenario_count": len(scenarios), "slide_count": len(plan), "plan": plan}
 
 
 def main() -> None:
