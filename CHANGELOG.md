@@ -2,6 +2,45 @@
 
 All notable changes to this project are documented in this file.
 
+## [6.0.0] — 2026-05-13
+
+### Added
+- **Content-driven layout selection**: `plan_from_notes()` replaces hardcoded 7-slide sequence; layout assigned by content richness (data density, core message, showcase flow)
+- **Theme rhythm system**: automatic hero→light→dark alternation between scenario slides; 6+ page decks get dark big-quote dividers
+- **Strategic / VP Review mode**: `## Slide N — Title` parser, `StrategicSlide` dataclass, intent classification, 8 strategic renderers (cover, closing, decision-grid, positioning, master-storyline, service-architecture, hero-demo, data-flywheel, experience-space, naming-direction)
+- **Image placeholder protocol**: `[img: path:label]` / `[photo: path:label]` markers extracted, distributed across scenarios, rendered as real `<img>` tags in HTML
+- **Input adapter image hint preservation**: all formats (outline/topics/script) preserve `[img: xxx]` markers through normalization
+- **CLI `--mode` flag**: `auto` (default), `scenario`, `strategic` with auto-detect fallback
+
+### Changed
+- `write_html_deck()` reads from `plan_from_notes()` instead of fixed 7-slide sequence
+- `build_deck()` auto-detects strategic vs scenario mode from input format
+- Strategic content filtered from native PPTX intent mapping (HTML-only until native layout mapping added)
+
+### Verified
+- Scenario mode: 10 slides with proper theme alternation (hero/light/light/dark/light/dark/light/dark/light/hero)
+- Strategic mode: 6 slides with varied layouts (cover→positioning→service-matrix→flywheel→journey→closing)
+- Auto-detect correctly routes between modes
+- Image hints render as real `<img>` tags when paths provided
+
+## [5.0.0] — 2026-05-13
+
+### Added
+- **Workflow-first SKILL.md**: 6-step workflow (Clarify → Plan → Generate → Verify → Export → Self-check) replacing dense rule dump
+- **Reference files** (`references/`): checklist.md (P0-P3 quality gates), components.md (component catalog), layouts.md (layout skeletons + theme rhythm), themes.md (color presets + brand colors), visual-verification.md (screenshot + grep verification procedure)
+- **Input adapter** (`scripts/input_adapter.py`): normalizes free-form topics, outlines, scripts, and structured notes into `## 场景 N｜Name` Markdown
+- **Auto format detection**: input adapter auto-detects input format (structured/outline/topics/script)
+- **Visual verification procedure**: structured checks for cover, theme rhythm, fonts, components, closing, and export fidelity
+
+### Changed
+- SKILL.md reduced from 165 lines to ~100 lines, delegating detail to `references/` files
+- SKILL.md now documents input flexibility: accepts briefs, outlines, scripts, or structured notes
+- Output format selection (PPTX/HTML/PDF) is Step 1 of the workflow
+- AGENTS.md updated with input_adapter.py command, new file structure, 6-step workflow
+
+### Verified
+- Brand color `#005EB8` consistent across tokens.css, HTML deck CSS, and PPTX template
+
 ## [4.0.0] — 2026-05-12
 
 ### Added

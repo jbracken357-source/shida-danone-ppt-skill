@@ -130,16 +130,16 @@ When the parser detects `## Slide N — Title` format, it routes to the **strate
 
 | Layout Intent | Render Function | Visual Pattern |
 |---------------|-----------------|----------------|
-| `cover` | `render_cover()` | Blue bg + white circle + centered title |
-| `closing` | `render_closing()` | Same as cover, "THANK YOU" |
-| `decision-grid` | `render_decision_grid()` | 2×2 or 1×4 decision cards (positioning/storyline/hero/naming) |
-| `positioning` | `render_positioning()` | Before/After two-column contrast ("What DHT Is Not" vs "What DHT Is") |
-| `master-storyline` | `render_master_storyline()` | Horizontal flow: Vision → Pillars → Services → Demos → Flywheel → Experience |
-| `service-architecture` | `render_service_architecture()` | Matrix table with colored priority tags (Hero/Core/Future) |
-| `hero-demo` | `render_hero_demo()` | Two-column split hero (invisible vs visible, or compare two options) |
-| `data-flywheel` | `render_data_flywheel()` | 6-step circular loop with guardrail warning bar |
-| `experience-space` | `render_experience_space()` | 4-column journey map with arrow connectors |
-| `naming-direction` | `render_naming_direction()` | Table + recommendation blocks + avoid list + VP decision bar |
+| `cover` | `_render_strategic_cover` | Blue bg + white circle + centered title |
+| `closing` | `_render_strategic_closing` | Same as cover, "THANK YOU" |
+| `decision-grid` | `render_decision_grid` | 2x2 or 1x4 decision cards (positioning/storyline/hero/naming) |
+| `positioning` | `render_positioning` | Before/After two-column contrast ("What DHT Is Not" vs "What DHT Is") |
+| `master-storyline` | `render_master_storyline` | Horizontal flow: Vision → Pillars → Services → Demos → Flywheel → Experience |
+| `service-architecture` | `render_service_architecture` | Matrix table with colored priority tags (Hero/Core/Future) |
+| `hero-demo` | `render_hero_demo` | Two-column split hero (invisible vs visible, or compare two options) |
+| `data-flywheel` | `render_data_flywheel` | 6-step circular loop with guardrail warning bar |
+| `experience-space` | `render_experience_space` | 4-column journey map with arrow connectors |
+| `naming-direction` | `render_naming_direction` | Table + recommendation blocks + avoid list + VP decision bar |
 
 ### Strategic slide anatomy
 
@@ -174,11 +174,13 @@ When the parser detects `## 场景 N｜Name` format, it routes to the **scenario
 
 | Layout Intent | Render Function | Visual Pattern |
 |---------------|-----------------|----------------|
-| `opening-cover` | `render_cover()` | Blue bg + white circle |
-| `narrative-frame` | `render_narrative_frame()` | 3-column narrative cards |
-| `three-column` | `render_scenario()` | Pain points / data / products |
-| `flow` | `render_flow()` | 5-step process with arrows |
-| `closing` | `render_closing()` | Same as cover, "THANK YOU" |
+| `opening-cover` | `render_cover` | Blue bg + white circle |
+| `narrative-frame` | `render_narrative_frame` | 3-column narrative cards |
+| `three-column` | `render_scenario` | Pain points / data / products |
+| `flow` | `render_flow` | 5-step process with arrows |
+| `big-quote` | `render_big_quote` | Large serif quote on dark background |
+| `stat-grid` | `render_stat_grid` | Data大字报 with 2-3 big numbers |
+| `closing` | `render_closing` | Same as cover, "THANK YOU" |
 
 ---
 
