@@ -1,7 +1,7 @@
 # Shida Danone PPT Skill / Shida Danone PPT 技能
 
-> **EN**: Danone-style corporate presentation generator. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. v6.0.0.
-> **CN**: Danone 风格企业演示文稿生成器。摄影优先布局、多色分类主题、"One Planet. One Health" 品牌基因。v6.0.0。
+> **EN**: Danone-style corporate presentation generator. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. v6.0.2.
+> **CN**: Danone 风格企业演示文稿生成器。摄影优先布局、多色分类主题、"One Planet. One Health" 品牌基因。v6.0.2。
 
 ---
 
@@ -33,25 +33,29 @@
 ├── requirements.txt       # Python dependencies (stdlib only)
 │
 ├── scripts/               # Build & export scripts
-│   ├── input_adapter.py           # Normalize free-form input
+│   ├── input_adapter.py           # Normalize free-form input (fallback)
+│   ├── outline_parser.py          # Smart outline parser → plan.json (NEW)
 │   ├── brief_to_native_deck.py    # Brief → native PPTX
 │   ├── notes_to_danone_deck.py    # Notes → HTML deck (+ optional native)
-│   ├── build_native_pptx.py       # Core engine (XML clone + text swap)
+│   ├── build_native_pptx.py       # Core engine (XML clone + text swap + image replacement)
 │   ├── export_deck_pdf.mjs        # HTML → vector PDF
 │   ├── export_deck_pptx.mjs       # HTML → image PPTX
-│   └── profile_danone_template.py # Template analyzer
+│   ├── profile_danone_template.py # Template analyzer
+│   └── verify_deck.py             # Unified quality checker (P0-P3) (NEW)
 │
 ├── templates/             # Design system
-│   ├── tokens.css         # CSS design tokens
-│   ├── layout-map.json    # Intent → layout mapping
+│   ├── tokens.css         # CSS design tokens (single source of truth)
+│   ├── layout-map.json    # Intent → layout mapping (20 intents)
 │   └── danone-template-manifest.json
 │
 ├── references/            # Skill reference files
-│   ├── checklist.md       # P0-P3 quality gates
+│   ├── danone-dna.md      # Brand invariant anchor points (NEW)
+│   ├── danone-content-design.md # Enterprise content page standards (NEW)
+│   ├── checklist.md       # P0-P3 quality gates (NEW)
 │   ├── components.md      # Component catalog
 │   ├── layouts.md         # Layout skeletons + theme rhythm
 │   ├── themes.md          # Color presets + brand colors
-│   └── visual-verification.md
+│   └── visual-verification.md # Verification procedure (NEW)
 │
 ├── assets/
 │   └── deck_index.html    # Reusable deck shell
@@ -81,7 +85,13 @@ npm install
 
 ## Quick Start / 快速开始
 
-### 0. Normalize free-form input
+### 0. Smart outline parser (free-form → structured plan)
+```bash
+python scripts/outline_parser.py input.md --out plan.json
+python scripts/build_native_pptx.py --plan plan.json --out deck.pptx
+```
+
+### 0b. Normalize free-form input (fallback)
 ```bash
 python scripts/input_adapter.py \
   --input brief.md \
@@ -180,28 +190,25 @@ For full component specifications (cards, buttons, images, data viz, quote block
 
 > 详见 [**ROADMAP.md**](ROADMAP.md) 的完整分析和优化计划。
 
-### P1 — Native PPTX 图片替换
-- `image-content` / `section-photo` intents 在 HTML 路径已渲染，在 native PPTX 路径尚未实现图片替换到 `<p:pic>`
+### P2 — Dynamic placeholder mapping
+- `map_content_to_shapes()` still uses some hardcoded placeholder indices
+- Future: runtime parsing of layout XML for dynamic type matching
 
-### P1 — Strategic 布局 native PPTX 映射
-- Strategic 布局（decision-grid, flywheel, journey 等）尚未映射到 native PPTX
-- 当前策略：strategic 模式默认输出 HTML 路径
+### P2 — Export interactivity
+- PDF output is vector but not editable; Image PPTX is not editable
+- Only native PPTX path produces truly editable output
 
-### P2 — Export 交互性
-- PDF 输出为矢量但不可编辑；Image PPTX 不可编辑
-- 真正可编辑的路径仅 native PPTX
-
-### P2 — Input adapter 智能度
-- Script 格式拆分基于段落分块，部分 `待补充` 字段仍需要手动完善
+### P2 — Input adapter intelligence
+- Script format splitting relies on paragraph chunking; some `待补充` fields still need manual completion
 
 ---
 
 ## Roadmap / 路线图
 
 See [**ROADMAP.md**](ROADMAP.md) for the full v6.0 status and next-phase plans, including:
-- Phase 1: Native PPTX 图片替换 + 布局扩展
-- Phase 2: Input adapter 增强
-- 每日开发验证流程
+- Phase 1: ✓ Complete — design tokens, DNA docs, native image replacement, 20 intents, outline parser, quality checker
+- Phase 2: Dynamic placeholder mapping (runtime XML parsing)
+- Phase 3: Layout variants + anti-convergence per deck
 
 ### Running Smoke Tests
 ```bash

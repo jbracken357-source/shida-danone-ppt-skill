@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import logging
+import mimetypes
 import re
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -30,7 +33,6 @@ NS = {
 
 SLIDE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
 SLIDE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
-UNSUPPORTED_NATIVE_IMAGE_INTENTS = {"image-content", "section-photo"}
 TEMPLATE_CHROME_PLACEHOLDER_TYPES = {"sldNum", "dt", "ftr"}
 
 for prefix, uri in NS.items():
@@ -132,11 +134,6 @@ def validate_plan(layout_map: dict, plan: list[dict]) -> None:
         intent = spec.get("intent")
         if intent not in intents:
             raise ValueError(f"Slide {index}: unknown intent: {intent}")
-        if intent in UNSUPPORTED_NATIVE_IMAGE_INTENTS:
-            raise NotImplementedError(
-                f"Slide {index}: native image replacement is not implemented for "
-                f"'{intent}'. Use the HTML fallback path for image-led pages."
-            )
 
         content = spec.get("content", {})
         missing = [key for key in intents[intent].get("required_content", []) if key not in content]
@@ -144,6 +141,14 @@ def validate_plan(layout_map: dict, plan: list[dict]) -> None:
             raise ValueError(
                 f"Slide {index} ({intent}) missing required content: {', '.join(missing)}"
             )
+
+        # Validate image paths for image-led intents
+        if intent in {"image-content", "section-photo"}:
+            image = content.get("image")
+            if image and not Path(image).exists():
+                raise FileNotFoundError(
+                    f"Slide {index} ({intent}): image file not found: {image}"
+                )
 
 
 def content_values(intent: str, content: dict) -> list[str]:
@@ -182,6 +187,160 @@ def shape_key(sp: ET.Element) -> tuple[str, str]:
     if ph is None:
         return ("", "")
     return (ph.attrib.get("type", ""), ph.attrib.get("idx", ""))
+
+
+# ─── Image Replacement Engine ───────────────────────────────────────────────
+
+def _mime_type_for(path: Path) -> str:
+    """Guess MIME type from file extension."""
+    mime, _ = mimetypes.guess_type(str(path))
+    if mime:
+        return mime
+    ext = path.suffix.lower()
+    return {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }.get(ext, "image/png")
+
+
+def _media_ext_for(mime: str) -> str:
+    """Map MIME type to file extension for ppt/media/ naming."""
+    return {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/gif": ".gif",
+        "image/svg+xml": ".svg",
+        "image/webp": ".webp",
+    }.get(mime, ".png")
+
+
+def _content_type_for(mime: str) -> str:
+    """Map MIME type to [Content_Types].xml ContentType."""
+    return {
+        "image/png": "image/png",
+        "image/jpeg": "image/jpeg",
+        "image/gif": "image/gif",
+        "image/svg+xml": "image/svg+xml",
+        "image/webp": "image/webp",
+    }.get(mime, "image/png")
+
+
+def _next_image_rid(rels_root: ET.Element) -> str:
+    """Generate next available rId for image relationships."""
+    existing = set()
+    for rel in rels_root:
+        rid = rel.attrib.get("Id", "")
+        if rid.startswith("rId"):
+            try:
+                existing.add(int(rid[3:]))
+            except ValueError:
+                pass
+    next_num = max(existing, default=0) + 1
+    return f"rId{next_num}"
+
+
+def _next_media_name(parts: dict[str, bytes], mime: str) -> str:
+    """Generate unique media filename in ppt/media/."""
+    ext = _media_ext_for(mime)
+    existing = {
+        Path(n).name
+        for n in parts
+        if n.startswith("ppt/media/")
+    }
+    for i in range(1, 200):
+        name = f"image{i}{ext}"
+        if name not in existing:
+            return name
+    # Fallback: use hash
+    h = hashlib.md5(str(len(parts)).encode()).hexdigest()[:8]
+    return f"image_{h}{ext}"
+
+
+def copy_image_to_media(
+    image_path: Path,
+    parts: dict[str, bytes],
+    content_types: ET.Element,
+    slide_rels: ET.Element,
+) -> str:
+    """Copy an image into the PPTX package and create a relationship.
+
+    Returns the rId that can be used to reference this image in slide XML.
+    """
+    mime = _mime_type_for(image_path)
+    media_name = _next_media_name(parts, mime)
+    media_part = f"ppt/media/{media_name}"
+
+    # Read and store image data
+    image_data = image_path.read_bytes()
+    parts[media_part] = image_data
+
+    # Register content type override
+    ct = _content_type_for(mime)
+    # Check if this extension is already registered
+    registered = False
+    for default in content_types.findall("ct:Default", NS):
+        if default.attrib.get("Extension") == media_name.lstrip(".").split(".")[0]:
+            registered = True
+            break
+    if not registered:
+        ET.SubElement(
+            content_types,
+            f"{{{NS['ct']}}}Default",
+            {"Extension": media_name.lstrip("."), "ContentType": ct},
+        )
+
+    # Create relationship in slide rels
+    rid = _next_image_rid(slide_rels)
+    ET.SubElement(
+        slide_rels,
+        f"{{{NS['rel']}}}Relationship",
+        {"Id": rid, "Type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", "Target": f"../media/{media_name}"},
+    )
+
+    return rid
+
+
+def replace_placeholder_image(
+    slide_xml: ET.Element,
+    image_path: Path,
+    parts: dict[str, bytes],
+    content_types: ET.Element,
+    slide_rels: ET.Element,
+) -> bool:
+    """Replace the first <p:pic> placeholder in the slide with a custom image.
+
+    Returns True if a placeholder was found and replaced, False otherwise.
+    """
+    # Find picture placeholders in the slide
+    for pic in slide_xml.findall(".//p:pic", NS):
+        nv_pic = pic.find("p:nvPicPr", NS)
+        if nv_pic is None:
+            continue
+        ph = nv_pic.find("p:nvPr/p:ph", NS)
+        if ph is None:
+            continue
+        # This is a template picture placeholder
+        blip_fill = pic.find("p:blipFill", NS)
+        if blip_fill is None:
+            continue
+        blip = blip_fill.find("a:blip", NS)
+        if blip is None:
+            continue
+
+        # Copy image and get new rId
+        rid = copy_image_to_media(image_path, parts, content_types, slide_rels)
+
+        # Update the blip to point to the new image
+        blip.attrib[f"{{{NS['r']}}}embed"] = rid
+
+        logging.info("Replaced image placeholder with %s (rid=%s)", image_path.name, rid)
+        return True
+
+    return False
 
 
 def set_shape_text(sp: ET.Element, value: str) -> None:
@@ -587,14 +746,42 @@ def build_presentation(
             intent = spec["intent"]
             source = resolve_source_slide(intent, layout_map, samples)
             values = content_values(intent, spec.get("content", {}))
+            content = spec.get("content", {})
 
             slide_part = f"ppt/slides/slide{index}.xml"
-            slide_rels = f"ppt/slides/_rels/slide{index}.xml.rels"
+            slide_rels_name = f"ppt/slides/_rels/slide{index}.xml.rels"
+
+            # Replace text content
             parts[slide_part] = replace_text_runs(
-                zf.read(source.slide_part), values, intent=intent, content=spec.get("content", {}), slide_index=index
+                zf.read(source.slide_part), values, intent=intent, content=content, slide_index=index
             )
+
+            # Parse slide rels for image replacement
             raw_rels = zf.read(source.rels_part)
-            parts[slide_rels] = cleanup_unused_image_rels(parts[slide_part], raw_rels)
+            slide_rels_root = ET.fromstring(raw_rels)
+            slide_xml_root = ET.fromstring(parts[slide_part])
+
+            # Handle image replacement for image-led intents
+            image_path = content.get("image")
+            if image_path and intent in {"image-content", "section-photo"}:
+                img = Path(image_path)
+                if img.exists():
+                    replaced = replace_placeholder_image(
+                        slide_xml_root, img, parts, content_types, slide_rels_root
+                    )
+                    if not replaced:
+                        logging.warning(
+                            "Slide %d (%s): no picture placeholder found for image %s",
+                            index, intent, image_path,
+                        )
+                else:
+                    logging.warning("Slide %d (%s): image file not found: %s", index, intent, image_path)
+
+            # Serialize updated XML
+            parts[slide_part] = ET.tostring(slide_xml_root, encoding="utf-8", xml_declaration=True)
+            parts[slide_rels_name] = cleanup_unused_image_rels(parts[slide_part],
+                ET.tostring(slide_rels_root, encoding="utf-8", xml_declaration=True)
+            )
 
             rid = f"rIdNative{index}"
             ET.SubElement(

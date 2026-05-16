@@ -12,13 +12,18 @@ Danone-style corporate presentation generator. Triple-output architecture:
 - **HTML deck path**: renders CSS slides → export to vector PDF or image PPTX
 - **Input adapter**: normalizes free-form input (topics, outlines, scripts) → structured Markdown
 
-Version: 6.0.0
+Version: 6.0.2
 
 ---
 
 ## Quick Commands / 命令速查
 
-### 0. Normalize free-form input (topics, outlines, scripts)
+### 0. Smart outline parser (free-form → structured plan)
+```bash
+python scripts/outline_parser.py input.md --out plan.json
+```
+
+### 0b. Normalize free-form input (topics, outlines, scripts) — fallback
 ```bash
 python scripts/input_adapter.py \
   --input brief.md \
@@ -78,7 +83,13 @@ node scripts/export_deck_pptx.mjs \
   --width 1280 --height 720
 ```
 
-### 6. Profile a new template
+### 7. Unified quality check
+```bash
+python scripts/verify_deck.py \
+  ./deck/slides/ --pptx ./deck/deck-native.pptx
+```
+
+### 8. Profile a new template
 ```bash
 python scripts/profile_danone_template.py \
   "Danone Real Templates/Standard Danone Template.pptx" \
@@ -100,20 +111,24 @@ python scripts/profile_danone_template.py \
 ├── .gitignore
 │
 ├── scripts/                  # Build & export scripts
-│   ├── input_adapter.py             # Normalize free-form input
+│   ├── input_adapter.py             # Normalize free-form input (fallback)
+│   ├── outline_parser.py            # Smart outline parser → plan.json
 │   ├── brief_to_native_deck.py      # Entry: brief → native PPTX
-│   ├── build_native_pptx.py         # Core: XML clone + text swap
+│   ├── build_native_pptx.py         # Core: XML clone + text swap + image replacement
 │   ├── notes_to_danone_deck.py      # Entry: notes → HTML deck (+ opt. native)
 │   ├── export_deck_pdf.mjs          # HTML slides → vector PDF
 │   ├── export_deck_pptx.mjs         # HTML slides → image PPTX
-│   └── profile_danone_template.py   # Template analyzer
+│   ├── profile_danone_template.py   # Template analyzer
+│   └── verify_deck.py               # Unified quality checker (P0-P3)
 │
 ├── templates/                # Design system & mapping
-│   ├── tokens.css            # CSS design tokens (colors, fonts)
-│   ├── layout-map.json       # Intent → PPTX layout mapping
+│   ├── tokens.css            # CSS design tokens (colors, fonts) — single source of truth
+│   ├── layout-map.json       # Intent → PPTX layout mapping (20 intents)
 │   └── danone-template-manifest.json  # Full template profile (344KB)
 │
 ├── references/               # Skill reference files
+│   ├── danone-dna.md         # Brand invariant anchor points
+│   ├── danone-content-design.md # Enterprise content page standards + anti-AI-slop
 │   ├── checklist.md          # P0-P3 quality gates
 │   ├── components.md         # Component catalog with exact CSS specs
 │   ├── layouts.md            # Layout skeletons + theme rhythm planning
@@ -148,9 +163,11 @@ python scripts/profile_danone_template.py \
 ```
 Input (brief / notes / topics / outline / script)
     │
-    ├─→ input_adapter.py (if free-form) ──→ normalized.md
-    │                                             │
-    ├─→ mode detection ──────────────────────────┘
+    ├─→ outline_parser.py (free-form outline) ──→ plan.json
+    │                                                    │
+    ├─→ input_adapter.py (other free-form) ──→ normalized.md
+    │                                                    │
+    ├─→ mode detection ─────────────────────────────────┘
     │        │
     │        ├─→ strategic mode ──→ HTML only (decision grids, flywheels, journeys)
     │        │        notes_to_danone_deck.py --mode strategic
@@ -161,7 +178,8 @@ Input (brief / notes / topics / outline / script)
     │                                      ├─→ export_deck_pdf.mjs ──→ *.pdf (vector)
     │                                      └─→ export_deck_pptx.mjs ──→ *.pptx (image)
     │
-    └─→ brief_to_native_deck.py ──→ build_native_pptx.py ──→ *.pptx (editable)
+    └─→ brief_to_native_deck.py ──→ build_native_pptx.py ──→ *.pptx (editable, + image replacement)
+        └─→ outline_parser.py ──→ build_native_pptx.py ──→ *.pptx (editable)
 ```
 
 ### Mode Routing
@@ -190,16 +208,16 @@ Input (brief / notes / topics / outline / script)
 
 > 详见 `ROADMAP.md` 的完整分析和优化计划。
 
-### P1 — Native PPTX 图片替换
-- `image-content` / `section-photo` intents 在 HTML 路径已渲染，在 native PPTX 路径尚未实现图片替换到 `<p:pic>`
-- 需要：复制图片到 `ppt/media/`，更新 `a:blip` 引用
+### P2 — Dynamic placeholder mapping
+- `map_content_to_shapes()` still uses some hardcoded placeholder indices
+- Future: runtime parsing of layout XML to discover placeholder types/indices dynamically
 
-### P1 — Strategic 布局 native PPTX 映射
-- Strategic 布局（decision-grid, flywheel, journey 等）尚未映射到 native PPTX
-- 当前策略：strategic 模式默认输出 HTML 路径
+### P2 — Export interactivity
+- PDF output is vector but not editable; Image PPTX is not editable
+- Only native PPTX path produces truly editable output
 
-### P2 — Input adapter 智能度
-- Script 格式拆分基于段落分块，部分 `待补充` 字段仍需要手动完善
+### P2 — Input adapter intelligence
+- Script format splitting relies on paragraph chunking; some `待补充` fields still need manual completion
 
 ---
 

@@ -518,7 +518,7 @@ li::marker {
 }
 .opening-subtitle {
   font-size: 18px;
-  color: #1a1a1a;
+  color: var(--dn-text);
   font-weight: 400;
   margin-bottom: 40px;
   letter-spacing: 0.5px;

@@ -5,7 +5,7 @@
 
 ---
 
-## 当前状态（v6.0.1）
+## 当前状态（v7.0.0-dev）
 
 ### v6.0 已完成（2026-05-13）
 
@@ -29,32 +29,39 @@
 - [x] Input adapter preserves image hints across all formats
 - [x] HTML deck renders real `<img>` tags when paths exist
 
-#### Native PPTX fixes (v4.0)
-- [x] Resource cleanup: 15-20MB → ~700KB
-- [x] Content mapping: contents/three-column/scenario-detail fixed
-- [x] Slide number: output sequence instead of template page numbers
-- [x] Dangling image refs cleaned from slide rels
+### v7.0.0 新增加（2026-05-16）
 
-#### Editorial typography
-- [x] Playfair Display (serif headlines) + Inter (body) + IBM Plex Mono (data)
-- [x] Visual depth: card shadows, radial gradients, backdrop-filter blur, ghost numbers
+#### 设计系统统一
+- [x] 统一 tokens.css 与 themes.md 的 5 个冲突值
+- [x] 新建 `references/danone-dna.md`：品牌固定锚点文档
+- [x] 新建 `references/danone-content-design.md`：内容页企业级设计标准 + 反 AI slop 清单
+- [x] 修复 visual-verification.md、components.md、notes_to_danone_deck.py 中的硬编码颜色值
 
-### v6.0.1 文档同步（2026-05-16）
-- [x] `.gitignore` 全面更新：覆盖生成输出目录、smoke test artifacts、截图
-- [x] `AGENTS.md` 文件结构同步：清理 "NEW:" 标签，添加 `self-promo/`
-- [x] `README.md` 同步：版本号、文件结构、已知问题、Quick Start
-- [x] `CHANGELOG.md` 记录本次变更
+#### Native PPTX 图片替换
+- [x] `build_native_pptx.py` 新增图片替换引擎：复制图片到 `ppt/media/` + 更新 `a:blip` 引用
+- [x] 移除 `UNSUPPORTED_NATIVE_IMAGE_INTENTS` 限制
+- [x] `image-content` / `section-photo` intents 现在 native PPTX 路径可用
 
-### 已知的待完善项（P1-P2）
+#### 布局扩展（17 种 intent）
+- [x] 新增 8 种 strategic intent 映射到 layout-map.json
+- [x] 新增 `stat-grid`、`flow`、`big-quote` intent 映射
+- [x] 从硬编码 placeholder idx 改为动态类型匹配（进行中）
 
-#### P1 — Native PPTX 图片替换
-- `image-content` / `section-photo` intents 在 HTML 路径已渲染，在 native PPTX 路径尚未实现图片替换到 `<p:pic>`
-- 需要：复制图片到 `ppt/media/`，更新 `a:blip` 引用
+#### 智能大纲解析
+- [x] 新建 `scripts/outline_parser.py`：自由格式大纲 → JSON plan
+- [x] 意图分类器：基于关键词 + 结构分析自动分类 intent
+- [x] 主题色自动分配 + theme rhythm 规则应用
+- [x] 词边界匹配避免 substring 误匹配（如 "discovers" 匹配 "cover"）
 
-#### P1 — Native PPTX 布局扩展
-- 当前 native PPTX 仅支持 5 种基础布局映射（cover, contents, three-column, scenario-detail, closing）
-- Strategic 布局（decision-grid, flywheel, journey 等）尚未映射到 native PPTX
-- 当前策略：strategic 模式默认输出 HTML 路径
+#### 统一质量检查
+- [x] 新建 `scripts/verify_deck.py`：HTML + PPTX 统一 P0/P1 检查
+- [x] SKILL.md 更新：反映新增能力、路由表、资源文件
+
+### 已知的待完善项
+
+#### P1 — 动态 placeholder 映射
+- `map_content_to_shapes()` 仍使用部分硬编码 placeholder idx
+- 需要：运行时解析 layout XML 中每个 placeholder 的 type/idx/name
 
 #### P2 — Export 交互性
 - PDF 输出为矢量但不可编辑
@@ -65,22 +72,36 @@
 - Script 格式拆分基于段落分块，Claude 填充细节的逻辑尚未完全自动化
 - 部分 `待补充` 字段仍需要手动完善
 
+#### P2 — 布局变体多样性
+- 同一 intent 总是渲染相同 HTML 结构
+- 需要：anti-convergence 规则，同 deck 内同 intent 使用不同变体
+
 ---
 
 ## 优化计划
 
-### Phase 1: Native PPTX 图片替换 + 布局扩展
-| 顺序 | 任务 | 优先级 |
-|------|------|--------|
-| 1.1 | 实现 native PPTX 图片替换（`ppt/media/` + `a:blip`） | P1 |
-| 1.2 | 扩展 layout-map.json 覆盖 strategic 布局 | P1 |
-| 1.3 | `build_native_pptx.py` 支持 strategic render functions | P1 |
+### Phase 1: 已完成 ✓
+| 顺序 | 任务 | 状态 |
+|------|------|------|
+| 1.1 | 设计 Token 统一 | ✓ 完成 |
+| 1.2 | Danone DNA 文档 | ✓ 完成 |
+| 1.3 | 内容页设计规范 | ✓ 完成 |
+| 1.4 | Native PPTX 图片替换 | ✓ 完成 |
+| 1.5 | 布局扩展（17 种 intent） | ✓ 完成 |
+| 1.6 | 智能大纲解析 | ✓ 完成 |
+| 1.7 | 统一质量检查 | ✓ 完成 |
 
-### Phase 2: Input adapter 增强
+### Phase 2: 动态 placeholder 映射
 | 顺序 | 任务 | 优先级 |
 |------|------|--------|
-| 2.1 | Claude 辅助填充 `待补充` 字段的自动化流程 | P2 |
-| 2.2 | 更多输入格式支持（JSON, CSV, keynote export） | P3 |
+| 2.1 | `build_placeholder_map()` 运行时解析 layout XML | P1 |
+| 2.2 | 替换 `map_content_to_shapes()` 的 magic number | P1 |
+
+### Phase 3: 布局变体 + Anti-convergence
+| 顺序 | 任务 | 优先级 |
+|------|------|--------|
+| 3.1 | 同 intent 多 HTML 变体切换 | P2 |
+| 3.2 | Theme rhythm 自动优化 | P2 |
 
 ---
 
@@ -90,6 +111,10 @@
 
 ### Step 1: 生成测试 Deck
 ```bash
+# 智能大纲解析 → Native PPTX
+python scripts/outline_parser.py input.md --out plan.json
+python scripts/build_native_pptx.py --plan plan.json --out deck-native.pptx
+
 # Scenario mode
 python scripts/notes_to_danone_deck.py \
   --notes smoke-tests/dht-lab-notes/Slide\ notes.md \
@@ -99,14 +124,14 @@ python scripts/notes_to_danone_deck.py \
 python scripts/notes_to_danone_deck.py \
   --notes smoke-tests/strategic-brief.md \
   --out-dir /tmp/test-strategic --mode strategic
-
-# Auto-detect
-python scripts/notes_to_danone_deck.py \
-  --notes /tmp/normalized.md \
-  --out-dir /tmp/test-auto
 ```
 
-### Step 2: HTML 视觉自检
+### Step 2: 统一质量检查
+```bash
+python scripts/verify_deck.py ./deck/slides/ --pptx ./deck-native.pptx
+```
+
+### Step 3: HTML 视觉自检
 ```bash
 start /tmp/test-html/index.html  # Windows
 ```
@@ -116,12 +141,6 @@ start /tmp/test-html/index.html  # Windows
 - [ ] 图片占位符渲染正确
 - [ ] 布局多样化（非单一卡片网格）
 - [ ] Strategic 模式布局正确
-
-### Step 3: Export 验证
-```bash
-node scripts/export_deck_pdf.mjs --slides /tmp/test-html/slides --out /tmp/test.pdf --width 1280 --height 720
-node scripts/export_deck_pptx.mjs --slides /tmp/test-html/slides --out /tmp/test-image.pptx --width 1280 --height 720
-```
 
 ### Step 4: 文档同步检查
 - [ ] SKILL.md 的 design rules 与代码一致
@@ -148,7 +167,18 @@ npm list playwright pdf-lib pptxgenjs sharp 2>/dev/null || npm install
 
 ## 参考资源
 
-- `templates/layout-map.json` — intent → PPTX layout 映射
-- `scripts/build_native_pptx.py` — native PPTX 核心逻辑
-- `scripts/notes_to_danone_deck.py` — HTML deck + strategic mode 核心逻辑
-- `scripts/input_adapter.py` — 输入格式规范化
+| 文件 | 用途 |
+|------|------|
+| `references/danone-dna.md` | 品牌固定锚点（封面/末页/字体/页码/Footer） |
+| `references/danone-content-design.md` | 内容页企业级设计标准 + 反 AI slop |
+| `references/layouts.md` | 布局注册表 + theme rhythm |
+| `references/themes.md` | 主题色 + 品牌色（引用 tokens.css） |
+| `references/components.md` | 组件规格 |
+| `references/visual-verification.md` | 验证流程 |
+| `references/checklist.md` | P0/P1/P2/P3 自检清单 |
+| `templates/tokens.css` | 设计 Token 唯一事实源 |
+| `templates/layout-map.json` | Intent → PPTX layout 映射 |
+| `scripts/build_native_pptx.py` | Native PPTX 核心（含图片替换） |
+| `scripts/outline_parser.py` | 智能大纲解析 |
+| `scripts/verify_deck.py` | 统一质量检查 |
+| `scripts/notes_to_danone_deck.py` | HTML deck + strategic mode |

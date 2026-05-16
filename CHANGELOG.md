@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented in this file.
 
+## [6.0.2] — 2026-05-16
+
+### Added
+- **Smart outline parser** (`scripts/outline_parser.py`): free-form Markdown → structured slide plan with automatic intent classification (word-boundary matching to avoid substring false positives), theme color assignment, and theme rhythm rule application
+- **Unified quality checker** (`scripts/verify_deck.py`): P0/P1/P2/P3 deck verification for both HTML and native PPTX in a single command
+- **Native PPTX image replacement engine**: `build_native_pptx.py` now copies real images to `ppt/media/` and updates `a:blip` XML references — `image-content` and `section-photo` intents produce fully native editable PPTX
+- **11 new strategic intents to layout-map.json**: decision-grid, positioning, master-storyline, data-flywheel, experience-space, naming-direction, hero-demo, service-architecture, stat-grid, flow, big-quote — all with `native_supported: true`
+- **New reference documents**:
+  - `references/danone-dna.md`: brand invariant anchor points (cover/closing/footer/fonts/colors)
+  - `references/danone-content-design.md`: enterprise content page design standards + anti-AI-slop checklist
+  - `references/checklist.md`: P0-P3 quality gate checklist
+  - `references/themes.md`: theme presets + brand colors (references tokens.css)
+  - `references/visual-verification.md`: screenshot + grep verification procedure
+- **Smoke test**: `smoke-tests/self-promo/` self-promotion smoke test inputs
+
+### Changed
+- **SKILL.md routing table**: `outline_parser.py` replaces `input_adapter.py` as primary free-form input handler; 4 input types now documented (outline, structured notes, scenario notes, brief)
+- **`build_native_pptx.py`**: removed `UNSUPPORTED_NATIVE_IMAGE_INTENTS` restriction; added image replacement engine (~200 lines); validates image paths exist before processing
+- **`notes_to_danone_deck.py`**: minor fix to slide title parsing separator
+- **`layout-map.json`**: 20 total intents (was 9); strategic intents now mapped to native PPTX layouts with fallbacks
+- **`references/components.md`**: fixed hardcoded color value to reference tokens.css
+- **Design token consistency**: resolved 5 conflicting values between tokens.css and themes.md
+
+### Verified
+- Native PPTX image replacement: image copied to ppt/media/, blip reference updated, text remains editable
+- 20 intents in layout-map.json all have preferred_layout + fallback_layouts + native_supported flag
+- outline_parser correctly classifies intents with word-boundary matching (no "discovers" → "cover" false positive)
+- verify_deck.py runs P0/P1 checks on both HTML slides and native PPTX
+
 ## [6.0.1] — 2026-05-16
 
 ### Changed

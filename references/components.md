@@ -104,7 +104,7 @@ Every component below appears in generated decks. Use exact specs.
 - Background: solid `#005EB8`
 - White circle: 600px, centered, `border-radius: 50%`
 - Title: Playfair Display, 48px, 700 weight, `#005EB8` (inside circle)
-- Subtitle: 18px, `#1a1a1a`, above title
+- Subtitle: 18px, `var(--dn-text)` / `#262627`, above title
 - Logo: "DANONE" 28px, 800 weight, letter-spacing 4px, at bottom of circle
 - Slogan: "ONE PLANET. ONE HEALTH" 11px, teal color, below logo
 

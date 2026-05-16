@@ -20,8 +20,8 @@
       "preferred_layout": "Blue: Full Image",
       "fallback_layouts": ["Blue: Text w/ Large Image", "Red: Two Content Image"],
       "required_content": ["title", "image"],
-      "native_supported": false,
-      "notes": "Use for section breaks and photography-led pages. Native image replacement is not implemented yet; route this intent through the HTML fallback path."
+      "native_supported": true,
+      "notes": "Use for section breaks and photography-led pages. Image is copied to ppt/media/ and blip reference updated."
     },
     "big-message": {
       "preferred_layout": "Blue: Full White - Big Text / No Caps",
@@ -45,8 +45,8 @@
       "preferred_layout": "Blue: Text w/ Large Image",
       "fallback_layouts": ["Yellow: Content w/Image Land", "Blue: Content w/Image Port"],
       "required_content": ["title", "body", "image"],
-      "native_supported": false,
-      "notes": "Use when a real Danone/product/photo asset carries the page. Native image replacement is not implemented yet; route this intent through the HTML fallback path."
+      "native_supported": true,
+      "notes": "Use when a real Danone/product/photo asset carries the page. Image is copied to ppt/media/ and blip reference updated."
     },
     "chart-or-table": {
       "preferred_layout": "Blue: Two Content Box",
@@ -59,6 +59,83 @@
       "fallback_layouts": ["Closing Slide Square", "Orange: Title Only"],
       "required_content": ["title"],
       "notes": "Use for thank-you and final action slides."
+    },
+    "decision-grid": {
+      "preferred_layout": "Blue: Two Content Box",
+      "fallback_layouts": ["Blue: Four Content", "Blue: Two Content - Big Text"],
+      "required_content": ["title", "decision_items"],
+      "native_supported": true,
+      "notes": "VP decision cards (2x2 or 1x4). Fill multiple body placeholders with decision card text."
+    },
+    "positioning": {
+      "preferred_layout": "Blue: Two Content - Big Text",
+      "fallback_layouts": ["Blue: Two Content Box", "Aqua: Two Content"],
+      "required_content": ["title", "before_text", "after_text"],
+      "native_supported": true,
+      "notes": "Two-column contrast: before (soft bg, muted) vs after (solid theme bg, white text)."
+    },
+    "master-storyline": {
+      "preferred_layout": "Blue: Full White - Big Text",
+      "fallback_layouts": ["Blue: Full White - Big Text / No Caps", "Blue: Full Colour - Big Text"],
+      "required_content": ["title", "headline"],
+      "native_supported": true,
+      "notes": "Strategic mainline narrative. Big headline with minimal supporting text."
+    },
+    "data-flywheel": {
+      "preferred_layout": "Blue: Four Content",
+      "fallback_layouts": ["Blue: Two Content Box", "Aqua: Three Column w/Image"],
+      "required_content": ["title", "flywheel_steps"],
+      "native_supported": true,
+      "notes": "Circular data-learning loop (6 steps). Distribute across 4 body placeholders."
+    },
+    "experience-space": {
+      "preferred_layout": "Aqua: Three Column w/Image",
+      "fallback_layouts": ["Blue: Three Column w/Image", "Salmon: Three Column"],
+      "required_content": ["title", "column_1", "column_2", "column_3"],
+      "native_supported": true,
+      "notes": "4-column physical experience journey map with arrow connectors."
+    },
+    "naming-direction": {
+      "preferred_layout": "Blue: Title Only",
+      "fallback_layouts": ["Blue: Full White - Big Text / No Caps"],
+      "required_content": ["title", "naming_recommendation"],
+      "native_supported": true,
+      "notes": "Naming territories + recommendation. Title + body text."
+    },
+    "hero-demo": {
+      "preferred_layout": "Blue: Text w/ Large Image",
+      "fallback_layouts": ["Yellow: Content w/Image Land", "Blue: Full Image"],
+      "required_content": ["title", "body", "image"],
+      "native_supported": true,
+      "notes": "Product hero demonstration. Image + description."
+    },
+    "service-architecture": {
+      "preferred_layout": "Blue: Two Content Box",
+      "fallback_layouts": ["Blue: Two Content - Big Text", "Aqua: Two Content"],
+      "required_content": ["title", "left_content", "right_content"],
+      "native_supported": true,
+      "notes": "Service lifecycle matrix table. Two-column layout."
+    },
+    "stat-grid": {
+      "preferred_layout": "Blue: Full White - Big Text / Two numbers",
+      "fallback_layouts": ["Blue: Four Content", "Aqua: Three Column w/Image"],
+      "required_content": ["title", "stats"],
+      "native_supported": true,
+      "notes": "Data highlights with big numbers. Distribute stats across body placeholders."
+    },
+    "flow": {
+      "preferred_layout": "Blue: Four Content",
+      "fallback_layouts": ["Blue: Two Content Box", "Aqua: Three Column w/Image"],
+      "required_content": ["title", "flow_steps"],
+      "native_supported": true,
+      "notes": "Process steps with arrow connectors. Distribute steps across body placeholders."
+    },
+    "big-quote": {
+      "preferred_layout": "Blue: Full White - Big Text",
+      "fallback_layouts": ["Blue: Full White - Big Text / No Caps"],
+      "required_content": ["title", "quote"],
+      "native_supported": true,
+      "notes": "Full-page centered quote. Title as attribution, quote as body text."
     }
   }
 }
