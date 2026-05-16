@@ -1,7 +1,7 @@
 # Shida Danone PPT Skill / Shida Danone PPT 技能
 
-> **EN**: Danone-style corporate presentation generator. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. v4.0.0.
-> **CN**: Danone 风格企业演示文稿生成器。摄影优先布局、多色分类主题、"One Planet. One Health" 品牌基因。v4.0.0。
+> **EN**: Danone-style corporate presentation generator. Photo-first layouts, multi-color category themes, "One Planet. One Health" brand DNA. v6.0.0.
+> **CN**: Danone 风格企业演示文稿生成器。摄影优先布局、多色分类主题、"One Planet. One Health" 品牌基因。v6.0.0。
 
 ---
 
@@ -28,21 +28,30 @@
 ├── SKILL.md               # Claude skill definition (source of truth)
 ├── AGENTS.md              # Commands & architecture reference
 ├── CHANGELOG.md           # Version history
+├── ROADMAP.md             # Known issues, optimization plans, next steps
 ├── package.json           # Node.js dependencies
 ├── requirements.txt       # Python dependencies (stdlib only)
 │
 ├── scripts/               # Build & export scripts
-│   ├── brief_to_native_deck.py     # Brief → native PPTX
-│   ├── notes_to_danone_deck.py     # Notes → HTML deck (+ optional native)
-│   ├── build_native_pptx.py        # Core engine (XML clone + text swap)
-│   ├── export_deck_pdf.mjs         # HTML → vector PDF
-│   ├── export_deck_pptx.mjs        # HTML → image PPTX
-│   └── profile_danone_template.py  # Template analyzer
+│   ├── input_adapter.py           # Normalize free-form input
+│   ├── brief_to_native_deck.py    # Brief → native PPTX
+│   ├── notes_to_danone_deck.py    # Notes → HTML deck (+ optional native)
+│   ├── build_native_pptx.py       # Core engine (XML clone + text swap)
+│   ├── export_deck_pdf.mjs        # HTML → vector PDF
+│   ├── export_deck_pptx.mjs       # HTML → image PPTX
+│   └── profile_danone_template.py # Template analyzer
 │
 ├── templates/             # Design system
 │   ├── tokens.css         # CSS design tokens
 │   ├── layout-map.json    # Intent → layout mapping
 │   └── danone-template-manifest.json
+│
+├── references/            # Skill reference files
+│   ├── checklist.md       # P0-P3 quality gates
+│   ├── components.md      # Component catalog
+│   ├── layouts.md         # Layout skeletons + theme rhythm
+│   ├── themes.md          # Color presets + brand colors
+│   └── visual-verification.md
 │
 ├── assets/
 │   └── deck_index.html    # Reusable deck shell
@@ -51,7 +60,7 @@
 │   └── Standard Danone Template.pptx
 │
 ├── backlog/               # Decision records
-└── smoke-tests/           # Test inputs
+└── smoke-tests/           # Test inputs & outputs
 ```
 
 For detailed command reference and architecture, see [**AGENTS.md**](AGENTS.md).
@@ -72,6 +81,14 @@ npm install
 
 ## Quick Start / 快速开始
 
+### 0. Normalize free-form input
+```bash
+python scripts/input_adapter.py \
+  --input brief.md \
+  --out /tmp/normalized.md \
+  --format auto
+```
+
 ### 1. Native editable PPTX (from brief)
 ```bash
 python scripts/brief_to_native_deck.py \
@@ -83,11 +100,18 @@ python scripts/brief_to_native_deck.py \
 
 ### 2. HTML deck + PDF (from structured notes)
 ```bash
-# Generate HTML slides
+# Generate HTML slides (scenario mode)
 python scripts/notes_to_danone_deck.py \
   --notes smoke-tests/dht-lab-notes/Slide\ notes.md \
   --out-dir ./deck \
   --brand-line "DHT Lab · Danone"
+
+# Strategic / VP Review mode
+python scripts/notes_to_danone_deck.py \
+  --notes smoke-tests/strategic-brief.md \
+  --out-dir ./deck \
+  --mode strategic \
+  --brand-line "Brand X · Danone"
 
 # Export to PDF
 node scripts/export_deck_pdf.mjs \
@@ -156,29 +180,28 @@ For full component specifications (cards, buttons, images, data viz, quote block
 
 > 详见 [**ROADMAP.md**](ROADMAP.md) 的完整分析和优化计划。
 
-### P0 — HTML Deck 视觉效果
-- 字体使用 Arial Narrow fallback，廉价且无品牌感（计划改用 Playfair Display + Inter）
-- 布局单调，只有 5 种对称卡片模式
-- 图片占位符像 wireframe，不像 editorial layout
-- Flat 纯色，无 gradient/shadow/视觉深度
-- 所有页都是 light 主题，没有 dark 页制造呼吸
+### P1 — Native PPTX 图片替换
+- `image-content` / `section-photo` intents 在 HTML 路径已渲染，在 native PPTX 路径尚未实现图片替换到 `<p:pic>`
 
-### P0 — Native PPTX 功能
-- 输出文件 15-20MB：复制了整个模板（649 文件），未清理未使用资源
-- `contents` / `three-column` intent 内容映射 broken
-- slide number 显示原始模板页码而非输出页码
-- `image-content` / `section-photo` intents 未实现
+### P1 — Strategic 布局 native PPTX 映射
+- Strategic 布局（decision-grid, flywheel, journey 等）尚未映射到 native PPTX
+- 当前策略：strategic 模式默认输出 HTML 路径
+
+### P2 — Export 交互性
+- PDF 输出为矢量但不可编辑；Image PPTX 不可编辑
+- 真正可编辑的路径仅 native PPTX
+
+### P2 — Input adapter 智能度
+- Script 格式拆分基于段落分块，部分 `待补充` 字段仍需要手动完善
 
 ---
 
 ## Roadmap / 路线图
 
-See [**ROADMAP.md**](ROADMAP.md) for the full v4.0 optimization plan, including:
-- Phase 1: HTML Deck visual重构（字体、布局、图片占位符、CSS 架构、视觉深度、主题节奏）
-- Phase 2: Native PPTX 修复（资源清理、映射修复、slide number、悬空引用）
-- Phase 3: 文档同步
-- 每日开发验证流程（明天开工直接用）
-3. Update this README if user-facing
+See [**ROADMAP.md**](ROADMAP.md) for the full v6.0 status and next-phase plans, including:
+- Phase 1: Native PPTX 图片替换 + 布局扩展
+- Phase 2: Input adapter 增强
+- 每日开发验证流程
 
 ### Running Smoke Tests
 ```bash

@@ -1,17 +1,27 @@
+# Dependencies
 node_modules/
+
+# Generated output files
 *.pptx
 !Danone Real Templates/
 !Danone Real Templates/Standard Danone Template.pptx
 *.pdf
 *.png
 *.jpg
+*.jpeg
+*.gif
 *.odp
 *.log
-.DS_Store
-screenshots/
-__pycache__/
 
-/slides-preview/
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
 
 # Root-level generated artifacts
 /index.html
@@ -19,10 +29,13 @@ __pycache__/
 /test-output/
 /test-notes.md
 
-# Editor/OS
-*.swp
-*.swo
-Thumbs.db
+# Preview / test screenshots
+screenshots/
+slides-preview/
+
+# Generated output directories (not tracked)
+dht-deck/
+Testdocs/
 
 # Smoke test generated artifacts (HTML decks, plans, screenshots, scripts)
 smoke-tests/**/html-deck*/
@@ -31,3 +44,9 @@ smoke-tests/**/slides/
 smoke-tests/**/shared/tokens.css
 smoke-tests/**/plan*.json
 smoke-tests/**/screenshot*.js
+
+# Smoke test generated PPTX/PDF/PNG outputs
+smoke-tests/**/*.pptx
+smoke-tests/**/*.pdf
+smoke-tests/**/*.png
+smoke-tests/**/*.jpg

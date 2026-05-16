@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [6.0.1] — 2026-05-16
+
+### Changed
+- **Documentation sync**: updated `.gitignore`, `AGENTS.md`, `README.md`, `ROADMAP.md` to reflect actual project state
+- **`.gitignore` overhaul**: added `dht-deck/`, `Testdocs/`, `slides-preview/`, smoke-test generated artifacts (`.pptx`, `.pdf`, `.png`), consolidated patterns
+- **`README.md`**: version bump to v6.0.0 → v6.0.1, added `references/` to file structure, added `input_adapter.py` and strategic mode to Quick Start, updated Known Issues to reflect v6.0 fixed state
+- **`AGENTS.md`**: cleaned up "NEW:" tags, added `self-promo/` to smoke-tests directory listing
+
 ## [6.0.0] — 2026-05-13
 
 ### Added

@@ -100,7 +100,7 @@ python scripts/profile_danone_template.py \
 ├── .gitignore
 │
 ├── scripts/                  # Build & export scripts
-│   ├── input_adapter.py             # NEW: normalize free-form input
+│   ├── input_adapter.py             # Normalize free-form input
 │   ├── brief_to_native_deck.py      # Entry: brief → native PPTX
 │   ├── build_native_pptx.py         # Core: XML clone + text swap
 │   ├── notes_to_danone_deck.py      # Entry: notes → HTML deck (+ opt. native)
@@ -113,7 +113,7 @@ python scripts/profile_danone_template.py \
 │   ├── layout-map.json       # Intent → PPTX layout mapping
 │   └── danone-template-manifest.json  # Full template profile (344KB)
 │
-├── references/               # NEW: Skill reference files
+├── references/               # Skill reference files
 │   ├── checklist.md          # P0-P3 quality gates
 │   ├── components.md         # Component catalog with exact CSS specs
 │   ├── layouts.md            # Layout skeletons + theme rhythm planning
@@ -134,6 +134,7 @@ python scripts/profile_danone_template.py \
     ├── dht-lab-notes/
     ├── native-minimal/
     ├── ai-ppt-skill-value/
+    ├── self-promo/            # Self-promotion smoke test
     ├── strategic-brief.md     # Strategic mode test (6 slides)
     └── test-image-hints.md    # Image placeholder protocol test
 ```

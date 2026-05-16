@@ -1,11 +1,11 @@
 # Danone PPT Skill — Roadmap & Next Steps
 
 > 本文档记录当前已知问题、优化计划和下一步行动。
-> 最后更新：2026-05-13
+> 最后更新：2026-05-16
 
 ---
 
-## 当前状态（v6.0.0）
+## 当前状态（v6.0.1）
 
 ### v6.0 已完成（2026-05-13）
 
@@ -38,6 +38,12 @@
 #### Editorial typography
 - [x] Playfair Display (serif headlines) + Inter (body) + IBM Plex Mono (data)
 - [x] Visual depth: card shadows, radial gradients, backdrop-filter blur, ghost numbers
+
+### v6.0.1 文档同步（2026-05-16）
+- [x] `.gitignore` 全面更新：覆盖生成输出目录、smoke test artifacts、截图
+- [x] `AGENTS.md` 文件结构同步：清理 "NEW:" 标签，添加 `self-promo/`
+- [x] `README.md` 同步：版本号、文件结构、已知问题、Quick Start
+- [x] `CHANGELOG.md` 记录本次变更
 
 ### 已知的待完善项（P1-P2）
 
