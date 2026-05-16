@@ -1,220 +1,132 @@
 ---
 name: shida-danone-ppt-skill
-description: Use when creating Danone-branded presentations. Generates editable PPTX, HTML slide decks, or PDF. Photo-first or strategic layouts, multi-color themes, "One Planet. One Health" brand DNA.
-version: 6.0.0
-author: Shida Fu
-tags: [presentation, slides, html, danone, corporate, design-system, pptx, pdf, strategic]
+description: Generate Danone-branded presentation decks from outlines, briefs, or scripts. Parses content, assigns layouts/themes, outputs editable PPTX, HTML, or PDF. Use when the user asks to create slides, presentations, decks, PPTX, PDF reports, corporate decks, ESG presentations, product launches, VP review decks, or mentions "达能PPT"、"演示文稿"、"汇报"、"路演"、"品牌演示"、"Danone presentation"、"slide deck"、"powerpoint". Always use this skill for any Danone-branded or corporate presentation task — even if the user just says "帮我做个PPT" or "做几页slides".
+when_to_use: 用户提供PPT大纲/笔记/脚本需要转成幻灯片；需要做达能品牌风格的演示文稿；需要做可编辑PPTX、HTML翻页幻灯片或可打印PDF；需要做VP评审/战略对齐/产品发布/ESG报告等 corporate deck；用户提到 "达能PPT"、"做个PPT"、"帮我做几页slides"、"Danone deck"、"corporate presentation"、"brand deck"、"ESG report deck"。个人talk/发布会风格网页PPT → 用 guizang-ppt-skill；深色dashboard → 用 huashu-design。
 ---
 
 # Shida Danone PPT Skill
 
-> Generate Danone-style corporate decks from any input (brief, outline, script, or structured notes). Output as editable PPTX, HTML deck, or PDF — chosen by the user.
+> 从大纲/笔记/脚本生成达能品牌 PPT。三选一路径：可编辑 PPTX / HTML 翻页幻灯片 / 可打印 PDF。
 
-## When to use
+## Step 0: 路由决策
 
-- Danone / corporate-style reports, ESG decks, product launches
-- Deliverables needing editable PPTX or printable PDF
-- VP review / strategic alignment / positioning decks
-- Personal talks → use `guizang-ppt-skill` instead
-- Dark dashboards → Danone is light-first
-- Creative prototypes → use `huashu-design` instead
+读输入，判断 deck 类型，选择对应脚本。完整命令参考见 `AGENTS.md`。
 
-## Step 0: Detect deck type
+| 输入类型 | 识别特征 | 脚本 |
+|---------|---------|------|
+| **自由形式** | 话题列表、文章、大纲、bullet points | `scripts/input_adapter.py` 标准化 → `brief_to_native_deck.py` |
+| **结构化笔记（VP 评审/战略对齐）** | 标题含 `## Slide N — Title` 或 `## Slide N：Title` | `scripts/notes_to_danone_deck.py --mode strategic` |
+| **场景笔记（Science Lab）** | 标题含 `## 场景 N｜Name` | `scripts/notes_to_danone_deck.py --mode scenario` |
 
-Read the input. Determine which mode:
+**不确定用哪个？** 先跑 `input_adapter.py` 标准化输入，再用 `notes_to_danone_deck.py --mode auto` 自动检测。
 
-| Mode | Trigger | Format |
-|------|---------|--------|
-| **Strategic / VP Review** | Headings like `## Slide N — Title`, `## Slide N：Title`, or content about positioning, storyline, naming, decision | Outline with slide-by-slide structure |
-| **Scenario / Science Lab** | Headings like `## 场景 N｜Name` | Scenario-based notes with target users, pain points, hardware, data, indicators, products |
-| **Free-form** | Anything else | Brief, article, script, bullet list |
-
-### Routing
-
-- **Free-form** → normalize via `scripts/input_adapter.py` → detect type → proceed
-- **Scenario / Science Lab** → parse via `notes_to_danone_deck.py` with `--mode scenario`
-- **Strategic / VP Review** → parse via `notes_to_danone_deck.py` with `--mode strategic`
-
-Each mode uses a different parser and layout registry. Do NOT force strategic content into scenario templates, or vice versa.
+**输出格式**：在 Step 1 询问用户选择 PPTX / HTML / PDF / All。
 
 ---
 
 ## Workflow
 
-### Step 1: Clarify output format + accept input
+### Step 1: 确认输出格式
 
-Ask the user: **which format?**
-- **Editable PPTX** — real Danone template, text editable in PowerPoint
-- **HTML deck** — browser preview, full brand styling, interactive navigation
-- **PDF** — vector export from HTML deck (printable, searchable)
-- **All** — generate all three
+- **PPTX** — 真实达能模板，PowerPoint 内可编辑文字
+- **HTML** — 浏览器预览，品牌样式 + 交互导航
+- **PDF** — 从 HTML 导出的矢量 PDF（可打印、可搜索）
+- **All** — 三种格式同时生成
 
-Accept **any input format**:
-- Free-form topics or bullet outline → normalize via `scripts/input_adapter.py`
-- Long script or article → chunk into slides via `scripts/input_adapter.py`
-- Structured notes → auto-detect deck type in Step 0
+### Step 2: 解析与规划
 
-### Step 2: Parse and plan
-
-Normalize input to structured Markdown (if free-form):
 ```bash
+# 自由形式：先标准化
 python scripts/input_adapter.py --input brief.md --out /tmp/normalized.md
 ```
 
-Parse with the correct mode:
 ```bash
-# Strategic / VP Review
+# 战略 / VP 评审
 python scripts/notes_to_danone_deck.py \
-  --notes /tmp/normalized.md \
-  --out-dir ./deck \
-  --mode strategic \
-  --brand-line "Brand X · Danone"
-
-# Scenario / Science Lab
-python scripts/notes_to_danone_deck.py \
-  --notes /tmp/normalized.md \
-  --out-dir ./deck \
-  --mode scenario \
-  --brand-line "Brand X · Danone"
+  --notes /tmp/normalized.md --out-dir ./deck --mode strategic \
+  --brand-line "Brand X · Danone" [--native-pptx ./deck/deck.pptx]
 ```
 
-Decide slide count, theme rhythm, and layout assignments. **Plan theme rhythm** before generating:
-- Cover = hero, Closing = hero
-- No 3+ consecutive same-theme pages
-- 6+ page decks: at least 1 hero page per 3-4 content pages
-- See `references/layouts.md` for rhythm planning table
+```bash
+# 场景 / Science Lab
+python scripts/notes_to_danone_deck.py \
+  --notes /tmp/normalized.md --out-dir ./deck --mode scenario \
+  --brand-line "Brand X · Danone" [--native-pptx ./deck/deck.pptx]
+```
 
-### Step 3: Generate slides
+**规划 theme rhythm**（生成前必须做）：
+- 封面 = hero，封底 = hero
+- 不允许 3+ 页连续同主题（light/dark/hero）
+- 6+ 页 deck 每 3-4 页至少 1 页 hero
+- 节奏规则详见 `references/layouts.md`
 
-Read the reference files for component and layout specs:
-- `references/layouts.md` — layout skeletons and rhythm rules
-- `references/themes.md` — color presets and font stack
-- `references/components.md` — exact component specs
+### Step 3: 生成幻灯片
 
-Generate the chosen format:
+布局注册表见 `references/layouts.md`（战略布局 8 种 + 场景布局 7 种）。
+主题配色见 `references/themes.md`。
+组件规格见 `references/components.md`。
 
-| Format | Command | Notes |
-|--------|---------|-------|
-| **HTML deck** | Already done in Step 2 | Opens via `./deck/index.html` |
-| **Editable PPTX** | Add `--native-pptx ./deck/deck.pptx` to Step 2 command | Clones real Danone template |
-| **PDF** | See Step 5 | Export from HTML deck |
+HTML 生成在 Step 2 命令中自动完成（`./deck/index.html`）。
+PPTX 需要加 `--native-pptx` 参数。
 
-### Step 4: Visual verification
+### Step 4: 视觉验证
 
-Run through `references/visual-verification.md`:
-1. **Cover**: solid `#005EB8` bg + white circle + centered title
-2. **Theme rhythm**: grep theme classes, verify alternation
-3. **Fonts**: headlines show serif (Playfair Display), body shows sans-serif (Inter)
-4. **Components**: accent bars match theme, product cards are white + accent top
-5. **Closing**: same format as cover with "THANK YOU"
+按 `references/visual-verification.md` 逐项检查：
+1. 封面：实色 `#005EB8` + 白圆 + 居中标题
+2. Theme rhythm：grep theme classes，确认交替
+3. 字体：headline 显示 serif（Playfair Display），body 显示 sans-serif（Inter）
+4. 组件：accent bar 匹配主题色，product card 白底 + 顶栏
+5. 封底：同封面格式，标题为 "THANK YOU"
 
-### Step 5: Export (if PDF or image PPTX requested)
+### Step 5: 导出（如需 PDF 或图片 PPTX）
 
 ```bash
-# HTML → PDF (vector, searchable)
+# HTML → PDF
 node scripts/export_deck_pdf.mjs --slides ./deck/slides/ --out ./deck/deck.pdf --width 1280 --height 720
 
-# HTML → Image PPTX (visual fidelity, not editable)
+# HTML → 图片 PPTX（不可编辑）
 node scripts/export_deck_pptx.mjs --slides ./deck/slides/ --out ./deck/deck-image.pptx --width 1280 --height 720
 ```
 
-### Step 6: Self-check
+### Step 6: 自检
 
-Run through `references/checklist.md` (P0/P1/P2/P3 graded). All P0 items must pass before delivery.
-
----
-
-## Strategic Deck Layouts (VP Review Mode)
-
-When the parser detects `## Slide N — Title` format, it routes to the **strategic layout registry**. Each slide type gets a named `render_XXX()` function:
-
-| Layout Intent | Render Function | Visual Pattern |
-|---------------|-----------------|----------------|
-| `cover` | `_render_strategic_cover` | Blue bg + white circle + centered title |
-| `closing` | `_render_strategic_closing` | Same as cover, "THANK YOU" |
-| `decision-grid` | `render_decision_grid` | 2x2 or 1x4 decision cards (positioning/storyline/hero/naming) |
-| `positioning` | `render_positioning` | Before/After two-column contrast ("What DHT Is Not" vs "What DHT Is") |
-| `master-storyline` | `render_master_storyline` | Horizontal flow: Vision → Pillars → Services → Demos → Flywheel → Experience |
-| `service-architecture` | `render_service_architecture` | Matrix table with colored priority tags (Hero/Core/Future) |
-| `hero-demo` | `render_hero_demo` | Two-column split hero (invisible vs visible, or compare two options) |
-| `data-flywheel` | `render_data_flywheel` | 6-step circular loop with guardrail warning bar |
-| `experience-space` | `render_experience_space` | 4-column journey map with arrow connectors |
-| `naming-direction` | `render_naming_direction` | Table + recommendation blocks + avoid list + VP decision bar |
-
-### Strategic slide anatomy
-
-Each strategic slide in the input Markdown has this structure:
-
-```markdown
-## Slide N — Title
-
-### Page role
-One sentence: why this slide exists.
-
-### Key message
-The single takeaway the VP should remember.
-
-### Must show on slide
-Bullets, tables, or structured data that MUST appear.
-
-### Recommended visual
-One line describing the layout pattern (maps to a layout intent above).
-
-### Speaker script
-(Optional) What the presenter says.
-```
-
-The parser extracts these sections and maps `Recommended visual` → layout intent → `render_XXX()`.
-
----
-
-## Scenario Deck Layouts (Science Lab Mode)
-
-When the parser detects `## 场景 N｜Name` format, it routes to the **scenario layout registry**:
-
-| Layout Intent | Render Function | Visual Pattern |
-|---------------|-----------------|----------------|
-| `opening-cover` | `render_cover` | Blue bg + white circle |
-| `narrative-frame` | `render_narrative_frame` | 3-column narrative cards |
-| `three-column` | `render_scenario` | Pain points / data / products |
-| `flow` | `render_flow` | 5-step process with arrows |
-| `big-quote` | `render_big_quote` | Large serif quote on dark background |
-| `stat-grid` | `render_stat_grid` | Data大字报 with 2-3 big numbers |
-| `closing` | `render_closing` | Same as cover, "THANK YOU" |
+跑 `references/checklist.md`（P0/P1/P2/P3 分级）。P0 全部通过才能交付。
 
 ---
 
 ## Resource Files
 
-| File | Read when... |
-|------|-------------|
-| `references/checklist.md` | Step 6 self-check; verifying deck quality before delivery |
-| `references/components.md` | Step 3 generating slides; need exact component CSS specs |
-| `references/layouts.md` | Step 2 planning; deciding slide layouts and theme rhythm |
-| `references/themes.md` | Step 2 planning; choosing color presets and verifying brand colors |
-| `references/visual-verification.md` | Step 4; verifying generated deck looks correct |
+| 文件 | 何时读 |
+|------|--------|
+| `references/layouts.md` | Step 2 规划布局 + theme rhythm |
+| `references/themes.md` | Step 2 选主题色 + 品牌色 |
+| `references/components.md` | Step 3 生成组件（封面/卡片/表格/引用块等） |
+| `references/visual-verification.md` | Step 4 验证输出 |
+| `references/checklist.md` | Step 6 自检 |
 
 ---
 
 ## Core Principles
 
-1. **Content-appropriate layout**: strategic decks use decision matrices and storyline flows; science lab decks use scenario cards and data viz
-2. **Photography-first**: every page needs a photo placeholder or data viz (strategic decks may use icon/data-heavy layouts instead)
-3. **Multi-color themes**: match content to color (Gut=Green, Sport=Orange, Clinical=Pink, Water=Teal, Corporate=Blue)
-4. **No fake data**: use "Data TBD" placeholders, never hardcode percentages
-5. **One Planet. One Health**: on cover, every footer, and closing page
-6. **Cover/Closing format**: solid `#005EB8` bg + white circle + centered title + DANONE logo
-7. **No decorative illustrations**: Danone is photography / data-viz driven
+1. **内容匹配布局**：战略 deck 用决策矩阵 + storyline flow；科学 lab deck 用场景卡片 + 数据可视化
+2. **摄影优先**：每页需要照片占位符或数据可视化——纯文字页不符合达能品牌（摄影和数据是品牌语言的核心）
+3. **多色主题**：内容匹配颜色（Gut=绿 `#00A651` / Sport=橙 `#F26522` / Clinical=粉 `#E6007E` / Water=青 `#00B2A9` / Corporate=蓝 `#005EB8`），场景 deck 如果全蓝会显得单调
+4. **不使用假数据**：达能高管评审时对未经证实的数据提出质疑，用 "Data TBD" / "数据待补充" 占位符
+5. **One Planet. One Health**：品牌 DNA，出现在封面、每页 footer、封底
+6. **封面/封底格式**：实色 `#005EB8` 背景 + 白色圆 + 居中标题，详见 `references/components.md`
+7. **不使用装饰插画**：达能是摄影/数据可视化驱动的品牌——图标和 clipart 会削弱专业感
 
 ---
 
-## Common mistakes
+## Common Mistakes
 
-- All-blue decks (scenarios must use different theme colors)
-- Solid product cards (must be white + accent top bar)
-- Fake data (hardcoded percentages without user input)
-- Wrong cover format (must use Opening Slide Title, not gradient hero)
-- Missing "One Planet. One Health" slogan
-- Monotonous theme (every slide needs light/dark/hero class)
-- **Forcing strategic content into scenario templates** (VP review decks need decision grids, not 3-column scenario cards)
-- **All pages using the same layout** (strategic decks need varied layouts: grids, tables, flows, comparisons)
+| 错误 | 为什么容易发生 | 怎么避免 |
+|------|--------------|---------|
+| **全蓝 PPT** | 默认 corporate blue 容易一路用到所有页 | 用 `references/themes.md` category themes 按内容匹配颜色 |
+| **实心 product card** | 直接用主题色做卡片背景很直观 | product card 必须白底 + 顶栏 accent（设计系统的硬性约定） |
+| **假数据** | 编百分比让 deck 看起来更完整 | 达能高管会质疑数据来源——用 "Data TBD" 占位 |
+| **封面格式错误** | 用了渐变 hero 而非达能官方格式 | 必须是实色 `#005EB8` + 白圆 + 居中标题 |
+| **缺少 "One Planet. One Health"** | 容易被遗忘 | 品牌 DNA 三处必须有：封面、每页 footer、封底 |
+| **单调主题** | 每页默认 light blue 最安全 | 每页必须有 theme class（light/dark/hero），按 `references/layouts.md` 节奏交替 |
+| **战略布局塞进场景模板** | 内容判断不清 | VP 评审用 decision grid，科学 lab 用三栏场景卡片——不要混用 |
+| **所有页同一布局** | 用同一个 render_XXX 最省事 | 战略 deck 需要 varied layouts（grid/table/flow/comparison），见 `references/layouts.md` |
