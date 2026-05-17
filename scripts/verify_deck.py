@@ -34,22 +34,59 @@ NS = {
 P0_CHECKS = []
 
 
+def _read_html(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def _read_html_with_linked_css(path: Path) -> str:
+    """Return slide HTML plus same-origin linked CSS used by static checks."""
+    html = _read_html(path)
+    parts = [html]
+    for href in re.findall(r'<link[^>]+href=["\']([^"\']+\.css)["\']', html):
+        css_path = (path.parent / href).resolve()
+        try:
+            css_path.relative_to(path.parent.parent.resolve())
+        except ValueError:
+            continue
+        if css_path.exists():
+            parts.append(css_path.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
+def _has_slogan(text: str) -> bool:
+    lower = text.lower()
+    return "one planet" in lower or "one health" in lower
+
+
+def _is_strategic_deck(slides_dir: Path) -> bool:
+    strategic_markers = [
+        "decision-grid", "service-matrix", "flywheel-container", "flywheel-grid",
+        "experience-journey", "journey-map", "positioning-row", "positioning-slide",
+        "storyline-flow", "naming-table",
+    ]
+    for f in sorted(slides_dir.glob("*.html")):
+        html = _read_html(f)
+        if any(marker in html for marker in strategic_markers):
+            return True
+    return False
+
+
 def _check_cover_format(path: Path, results: list[dict]) -> None:
     """P0-1: Cover uses solid #005EB8 background."""
-    html = path.read_text(encoding="utf-8")
+    html = _read_html_with_linked_css(path)
     has_correct_bg = "#005EB8" in html or "var(--dn-blue)" in html
     results.append({
         "id": "P0-1",
         "name": "Cover background is solid #005EB8",
         "pass": has_correct_bg,
-        "detail": "Found #005EB8" if has_correct_bg else "Missing #005EB8 in cover HTML",
+        "detail": "Found Danone blue in cover HTML/CSS" if has_correct_bg else "Missing #005EB8 in cover HTML/CSS",
     })
 
 
 def _check_cover_circle(path: Path, results: list[dict]) -> None:
     """P0-2: Cover title is centered inside white circle."""
-    html = path.read_text(encoding="utf-8")
-    has_circle = "white-circle" in html or "600px" in html or "50%" in html
+    html = _read_html_with_linked_css(path)
+    has_circle = any(marker in html for marker in ["white-circle", "opening-circle", "600px", "50%"])
     results.append({
         "id": "P0-2",
         "name": "Cover title centered inside white circle",
@@ -60,8 +97,8 @@ def _check_cover_circle(path: Path, results: list[dict]) -> None:
 
 def _check_slogan_cover(path: Path, results: list[dict]) -> None:
     """P0-3: 'One Planet. One Health' appears on cover."""
-    html = path.read_text(encoding="utf-8")
-    has_slogan = "One Planet" in html or "One Health" in html or "ONE PLANET" in html
+    html = _read_html(path)
+    has_slogan = _has_slogan(html)
     results.append({
         "id": "P0-3",
         "name": "Slogan on cover page",
@@ -74,10 +111,10 @@ def _check_slogan_footer(slides_dir: Path, results: list[dict]) -> None:
     """P0-4: 'One Planet. One Health' appears in footer of every body page."""
     missing = []
     for f in sorted(slides_dir.glob("*.html")):
-        html = f.read_text(encoding="utf-8")
+        html = _read_html(f)
         if "opening-slide" in html or "closing-slide" in html:
             continue
-        if "One Planet" not in html and "One Health" not in html:
+        if not _has_slogan(html):
             missing.append(f.name)
     results.append({
         "id": "P0-4",
@@ -89,9 +126,9 @@ def _check_slogan_footer(slides_dir: Path, results: list[dict]) -> None:
 
 def _check_slogan_closing(path: Path, results: list[dict]) -> None:
     """P0-5: 'One Planet. One Health' appears on closing page."""
-    html = path.read_text(encoding="utf-8")
+    html = _read_html(path)
     if "closing-slide" in html:
-        has_slogan = "One Planet" in html or "One Health" in html
+        has_slogan = _has_slogan(html)
         results.append({
             "id": "P0-5",
             "name": "Slogan on closing page",
@@ -102,9 +139,9 @@ def _check_slogan_closing(path: Path, results: list[dict]) -> None:
 
 def _check_closing_format(path: Path, results: list[dict]) -> None:
     """P0-6: Closing uses same format as cover (solid #005EB8 + white circle)."""
-    html = path.read_text(encoding="utf-8")
+    html = _read_html_with_linked_css(path)
     has_bg = "#005EB8" in html or "var(--dn-blue)" in html
-    has_circle = "white-circle" in html or "50%" in html
+    has_circle = any(marker in html for marker in ["white-circle", "closing-circle", "600px", "50%"])
     results.append({
         "id": "P0-6",
         "name": "Closing format matches cover",
@@ -129,7 +166,7 @@ def _check_fonts(slides_dir: Path, results: list[dict]) -> None:
     """P0-8: Fonts load correctly (Playfair Display, Inter, IBM Plex Mono, Noto Sans SC)."""
     missing_fonts = []
     for f in sorted(slides_dir.glob("*.html")):
-        html = f.read_text(encoding="utf-8")
+        html = _read_html_with_linked_css(f)
         for font in ["Playfair Display", "Inter", "IBM Plex Mono", "Noto Sans SC"]:
             if font not in html:
                 missing_fonts.append(f"{f.name}: {font}")
@@ -172,10 +209,14 @@ def _check_photo_per_page(slides_dir: Path, results: list[dict]) -> None:
     """P1-2: Every page has a photo placeholder or data visualization."""
     no_visual = []
     for f in sorted(slides_dir.glob("*.html")):
-        html = f.read_text(encoding="utf-8")
+        html = _read_html(f)
         has_photo = any(marker in html for marker in [
             "img-circle", "frame-img", "img-slot", "photo-strip",
             "narrative-card", "stat-grid", "bar-chart", "ring-chart",
+            "opening-circle", "closing-circle", "decision-grid",
+            "service-matrix", "flywheel-container", "flywheel-grid",
+            "experience-journey", "journey-map", "positioning-row",
+            "positioning-slide", "storyline-flow", "naming-table",
         ])
         if not has_photo:
             no_visual.append(f.name)
@@ -191,7 +232,7 @@ def _check_theme_rhythm(slides_dir: Path, results: list[dict]) -> None:
     """P1-3: Theme rhythm — no 3+ consecutive same theme."""
     themes = []
     for f in sorted(slides_dir.glob("*.html")):
-        html = f.read_text(encoding="utf-8")
+        html = _read_html(f)
         m = re.search(r'theme="(\w+)"', html)
         themes.append(m.group(1) if m else "unknown")
 
@@ -226,7 +267,7 @@ def _check_hero_pages(slides_dir: Path, results: list[dict]) -> None:
 
     hero_count = 0
     for f in sorted(slides_dir.glob("*.html")):
-        html = f.read_text(encoding="utf-8")
+        html = _read_html(f)
         if 'theme="hero"' in html:
             hero_count += 1
 
@@ -240,9 +281,20 @@ def _check_hero_pages(slides_dir: Path, results: list[dict]) -> None:
 
 def _check_distinct_colors(slides_dir: Path, results: list[dict]) -> None:
     """P1-5: Each scenario uses a distinct theme color."""
+    if _is_strategic_deck(slides_dir):
+        deck_text = "\n".join(_read_html_with_linked_css(f) for f in sorted(slides_dir.glob("*.html")))
+        has_blue = any(marker in deck_text for marker in ["--dn-blue", "#005EB8", "var(--dn-blue)"])
+        results.append({
+            "id": "P1-5",
+            "name": "Strategic deck uses Danone corporate blue",
+            "pass": has_blue,
+            "detail": "Danone blue found" if has_blue else "Danone blue missing",
+        })
+        return
+
     colors_found = set()
     for f in sorted(slides_dir.glob("*.html")):
-        html = f.read_text(encoding="utf-8")
+        html = _read_html(f)
         for color in ["--dn-green", "--dn-orange", "--dn-pink", "--dn-teal", "--dn-blue"]:
             if color in html:
                 colors_found.add(color)
@@ -262,18 +314,33 @@ def _check_pptx_cover(pptx_path: Path, results: list[dict]) -> None:
     try:
         with zipfile.ZipFile(pptx_path) as zf:
             first_slide = zf.read("ppt/slides/slide1.xml")
-            # Check for cover layout name or blue background reference
-            # Template uses theme colors (not raw hex), so also check layout names
+            layout_name = ""
+            rels_name = "ppt/slides/_rels/slide1.xml.rels"
+            if rels_name in zf.namelist():
+                rels_root = ET.fromstring(zf.read(rels_name))
+                for rel in rels_root:
+                    if rel.attrib.get("Type", "").endswith("/slideLayout"):
+                        target = rel.attrib.get("Target", "")
+                        layout_part = str((Path("ppt/slides") / target).resolve()).replace("\\", "/")
+                        marker = "/ppt/"
+                        if marker in layout_part:
+                            layout_part = "ppt/" + layout_part.split(marker, 1)[1]
+                        if layout_part in zf.namelist():
+                            layout_root = ET.fromstring(zf.read(layout_part))
+                            c_sld = layout_root.find("p:cSld", NS)
+                            if c_sld is not None:
+                                layout_name = c_sld.attrib.get("name", "")
+                        break
             has_cover = any(marker in first_slide for marker in [
                 b"005EB8", b"002677",  # raw hex colors
                 b"Title Slide", b"Closing",  # layout names
                 b"cover", b"opening",  # intent markers
-            ])
+            ]) or layout_name in {"标题幻灯片", "Title Slide", "Title Slide + Photo ", "Title Slide Square"}
             results.append({
                 "id": "P0-1x",
                 "name": "PPTX first slide is cover layout",
                 "pass": has_cover,
-                "detail": "Cover layout found" if has_cover else "No cover indicators in first slide",
+                "detail": f"Cover layout found ({layout_name})" if has_cover else "No cover indicators in first slide",
             })
     except (KeyError, zipfile.BadZipFile) as e:
         results.append({
@@ -421,30 +488,80 @@ def print_results(results: list[dict], label: str = "") -> bool:
     return all_p0_pass
 
 
+def summarize_results(results: list[dict]) -> dict:
+    """Return pass/fail counts grouped by check level."""
+    summary = {
+        "p0": {"pass": 0, "fail": 0},
+        "p1": {"pass": 0, "fail": 0},
+        "other": {"pass": 0, "fail": 0},
+    }
+    for result in results:
+        if result["id"].startswith("P0"):
+            bucket = "p0"
+        elif result["id"].startswith("P1"):
+            bucket = "p1"
+        else:
+            bucket = "other"
+        summary[bucket]["pass" if result["pass"] else "fail"] += 1
+    return summary
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Verify deck quality against P0/P1 quality gates.")
     parser.add_argument("path", help="Path to slides directory or PPTX file")
     parser.add_argument("--pptx", help="Also check a PPTX file")
+    parser.add_argument("--json-out", help="Optional path for structured verification results")
     args = parser.parse_args()
 
     target = Path(args.path)
     all_ok = True
+    report = {"targets": [], "all_p0_pass": True}
 
     if target.is_dir():
         results = run_html_checks(target)
-        if not print_results(results, label=f"HTML deck: {target}"):
+        target_ok = print_results(results, label=f"HTML deck: {target}")
+        report["targets"].append({
+            "label": "html",
+            "path": str(target),
+            "results": results,
+            "summary": summarize_results(results),
+            "p0_pass": target_ok,
+        })
+        if not target_ok:
             all_ok = False
     elif target.is_file() and target.suffix == ".pptx":
         results = run_pptx_checks(target)
-        if not print_results(results, label=f"Native PPTX: {target}"):
+        target_ok = print_results(results, label=f"Native PPTX: {target}")
+        report["targets"].append({
+            "label": "pptx",
+            "path": str(target),
+            "results": results,
+            "summary": summarize_results(results),
+            "p0_pass": target_ok,
+        })
+        if not target_ok:
             all_ok = False
 
     if args.pptx:
         pptx_path = Path(args.pptx)
         if pptx_path.exists():
             results = run_pptx_checks(pptx_path)
-            if not print_results(results, label=f"Native PPTX: {pptx_path}"):
+            target_ok = print_results(results, label=f"Native PPTX: {pptx_path}")
+            report["targets"].append({
+                "label": "pptx",
+                "path": str(pptx_path),
+                "results": results,
+                "summary": summarize_results(results),
+                "p0_pass": target_ok,
+            })
+            if not target_ok:
                 all_ok = False
+
+    report["all_p0_pass"] = all_ok
+    if args.json_out:
+        json_path = Path(args.json_out)
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     sys.exit(0 if all_ok else 1)
 

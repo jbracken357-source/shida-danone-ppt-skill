@@ -1999,6 +1999,134 @@ def plan_from_strategic(title: str, slides: list[StrategicSlide]) -> list[dict]:
     return plan
 
 
+def native_plan_from_strategic(
+    title: str,
+    slides: list[StrategicSlide],
+    brand_line: str = "Danone Science Lab",
+) -> list[dict]:
+    """Convert strategic HTML plan items into native PPTX content specs."""
+    native_plan: list[dict] = []
+    strategic_plan = plan_from_strategic(title, slides)
+
+    for item in strategic_plan:
+        intent = item["intent"]
+        slide = item["slide"]
+        bullets = [value for value in slide.must_show if value]
+        bullet_block = bullet_text(bullets, slide.key_message or "Data TBD", 6)
+
+        if intent == "strategic-cover":
+            native_plan.append({
+                "intent": "opening-cover",
+                "content": {
+                    "title": title,
+                    "subtitle_or_date": brand_line,
+                },
+            })
+        elif intent == "strategic-closing":
+            native_plan.append({
+                "intent": "closing",
+                "content": {
+                    "title": slide.key_message or "THANK YOU",
+                },
+            })
+        elif intent == "positioning":
+            native_plan.append({
+                "intent": "positioning",
+                "content": {
+                    "title": slide.title,
+                    "before_text": "What DHT is not\n" + "\n".join(bullets[:2] or [slide.page_role or "Data TBD"]),
+                    "after_text": "What DHT is\n" + "\n".join(bullets[2:] or [slide.key_message or "Data TBD"]),
+                },
+            })
+        elif intent == "service-architecture":
+            midpoint = max(1, len(bullets) // 2)
+            native_plan.append({
+                "intent": "service-architecture",
+                "content": {
+                    "title": slide.title,
+                    "left_content": "\n".join(bullets[:midpoint] or [slide.page_role or "Data TBD"]),
+                    "right_content": "\n".join(bullets[midpoint:] or [slide.key_message or "Data TBD"]),
+                },
+            })
+        elif intent == "data-flywheel":
+            native_plan.append({
+                "intent": "data-flywheel",
+                "content": {
+                    "title": slide.title,
+                    "flywheel_steps": bullets or [slide.key_message or "Data TBD"],
+                },
+            })
+        elif intent == "experience-space":
+            native_plan.append({
+                "intent": "experience-space",
+                "content": {
+                    "title": slide.title,
+                    "column_1": "\n".join(bullets[0:2] or [slide.page_role or "Data TBD"]),
+                    "column_2": "\n".join(bullets[2:4] or [slide.key_message or "Data TBD"]),
+                    "column_3": "\n".join(bullets[4:6] or ["Data TBD"]),
+                },
+            })
+        elif intent == "naming-direction":
+            native_plan.append({
+                "intent": "naming-direction",
+                "content": {
+                    "title": slide.title,
+                    "naming_recommendation": slide.key_message or bullet_block,
+                },
+            })
+        elif intent == "master-storyline":
+            native_plan.append({
+                "intent": "master-storyline",
+                "content": {
+                    "title": slide.title,
+                    "headline": slide.key_message or bullet_block,
+                },
+            })
+        elif intent == "decision-grid":
+            native_plan.append({
+                "intent": "decision-grid",
+                "content": {
+                    "title": slide.title,
+                    "decision_items": bullets or [slide.key_message or "Data TBD"],
+                },
+            })
+        elif intent == "big-quote":
+            native_plan.append({
+                "intent": "big-quote",
+                "content": {
+                    "title": slide.title,
+                    "quote": slide.key_message or bullet_block,
+                },
+            })
+        elif intent == "stat-grid":
+            native_plan.append({
+                "intent": "stat-grid",
+                "content": {
+                    "title": slide.title,
+                    "stats": bullets or [slide.key_message or "Data TBD"],
+                },
+            })
+        elif intent == "flow":
+            native_plan.append({
+                "intent": "flow",
+                "content": {
+                    "title": slide.title,
+                    "flow_steps": bullets or [slide.key_message or "Data TBD"],
+                },
+            })
+        elif intent == "hero-demo":
+            native_plan.append({
+                "intent": "two-column",
+                "content": {
+                    "title": slide.title,
+                    "left_content": slide.key_message or slide.page_role or "Data TBD",
+                    "right_content": bullet_block,
+                },
+            })
+
+    return native_plan
+
+
 def write_strategic_deck(out_dir: Path, title: str, slides: list[StrategicSlide]) -> None:
     """Generate HTML deck from strategic/VP review input."""
     slides_dir = out_dir / "slides"
@@ -2210,7 +2338,15 @@ def build_deck(
     if mode == "strategic":
         title, slides = parse_strategic_notes(markdown)
         write_strategic_deck(out_dir, title, slides)
-        return {"title": title, "slide_count": len(slides), "mode": "strategic", "plan": []}
+        native_plan = native_plan_from_strategic(title, slides, brand_line=brand_line)
+        if out_plan is not None:
+            out_plan = Path(out_plan)
+            out_plan.parent.mkdir(parents=True, exist_ok=True)
+            out_plan.write_text(json.dumps({"slides": native_plan}, ensure_ascii=False, indent=2), encoding="utf-8")
+        if native_pptx is not None and native_plan:
+            builder = load_native_builder()
+            builder.build_presentation(template, layout_map, native_plan, native_pptx)
+        return {"title": title, "slide_count": len(native_plan), "mode": "strategic", "plan": native_plan}
 
     # Scenario mode (existing path)
     title, scenarios, showcase_flow, summary = parse_notes(markdown)

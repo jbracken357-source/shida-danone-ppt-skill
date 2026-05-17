@@ -162,6 +162,16 @@ def content_values(intent: str, content: dict) -> list[str]:
         "scenario-detail": ["title", "column_1", "column_2", "column_3"],
         "image-content": ["title", "body"],
         "chart-or-table": ["title", "chart_or_table", "insight"],
+        "positioning": ["title", "before_text", "after_text"],
+        "service-architecture": ["title", "left_content", "right_content"],
+        "data-flywheel": ["title", "flywheel_steps"],
+        "experience-space": ["title", "column_1", "column_2", "column_3"],
+        "decision-grid": ["title", "decision_items"],
+        "master-storyline": ["title", "headline"],
+        "naming-direction": ["title", "naming_recommendation"],
+        "stat-grid": ["title", "stats"],
+        "flow": ["title", "flow_steps"],
+        "big-quote": ["title", "quote"],
         "closing": ["title"],
     }
     values = []
@@ -387,14 +397,21 @@ def set_shape_text(sp: ET.Element, value: str) -> None:
             t.text = line
 
 
-def cleanup_unmapped_sample_content(root: ET.Element, mapped: dict[int, str], content: dict, intent: str) -> None:
+def cleanup_unmapped_sample_content(
+    root: ET.Element,
+    mapped: dict[int, str],
+    content: dict,
+    intent: str,
+    mapped_shape_ids: set[int] | None = None,
+) -> None:
     sp_tree = root.find("p:cSld/p:spTree", NS)
     if sp_tree is None:
         return
 
+    mapped_shape_ids = mapped_shape_ids or set()
     text_shapes = [sp for sp in root.findall(".//p:sp", NS) if sp.findall(".//a:t", NS)]
     for index, sp in enumerate(text_shapes):
-        if index in mapped:
+        if index in mapped or id(sp) in mapped_shape_ids:
             continue
         ph_type, ph_idx = shape_key(sp)
         if ph_type in TEMPLATE_CHROME_PLACEHOLDER_TYPES:
@@ -451,6 +468,32 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
                 return by_idx[k]
         return None
 
+    def put_first(keys: tuple[str, ...], content_key: str, fallback_title: bool = False) -> None:
+        index = pick(*keys)
+        if index is None and fallback_title:
+            index = title_shape
+        put(index, content_key)
+
+    def content_lines(key: str) -> list[str]:
+        value = content.get(key, [])
+        if isinstance(value, list):
+            return [str(item) for item in value if str(item).strip()]
+        return [line.strip() for line in str(value).splitlines() if line.strip()]
+
+    def put_sequence(keys: tuple[str, ...], content_key: str) -> None:
+        indexes = [by_idx[k] for k in keys if k in by_idx]
+        if not indexes or content_key not in content:
+            return
+        lines = content_lines(content_key)
+        if not lines:
+            return
+        if len(indexes) == 1:
+            mapped[indexes[0]] = "\n".join(lines)
+            return
+        for i, index in enumerate(indexes):
+            if i < len(lines):
+                mapped[index] = lines[i]
+
     if intent == "opening-cover":
         put(title_shape, "title")
         put(by_idx.get("10"), "subtitle_or_date")
@@ -464,6 +507,40 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
         put(by_idx.get("13") if "13" in by_idx else title_shape, "title")
         put(by_idx.get("1"), "chart_or_table")
         put(by_idx.get("2") if "2" in by_idx else by_idx.get("14"), "insight")
+    elif intent == "positioning":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put(pick("1", "21", "24"), "before_text")
+        put(pick("2", "22", "25", "14"), "after_text")
+    elif intent == "service-architecture":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put(pick("1", "21", "24"), "left_content")
+        put(pick("2", "22", "25", "14"), "right_content")
+    elif intent == "data-flywheel":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put_sequence(("1", "2", "3", "4", "21", "22", "23", "24", "25", "26", "14"), "flywheel_steps")
+    elif intent == "experience-space":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put(pick("21", "24", "1"), "column_1")
+        put(pick("22", "25", "2"), "column_2")
+        put(pick("23", "26", "14", "3"), "column_3")
+    elif intent == "decision-grid":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put_sequence(("1", "2", "21", "22", "23", "24", "25", "26", "14"), "decision_items")
+    elif intent == "master-storyline":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put(pick("15", "1", "14"), "headline")
+    elif intent == "naming-direction":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put(pick("1", "15", "14"), "naming_recommendation")
+    elif intent == "stat-grid":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put_sequence(("1", "2", "21", "22", "23", "24", "25", "26", "14"), "stats")
+    elif intent == "flow":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put_sequence(("1", "2", "21", "22", "23", "24", "25", "26", "14"), "flow_steps")
+    elif intent == "big-quote":
+        put_first(("13", "14"), "title", fallback_title=True)
+        put(pick("15", "1", "14"), "quote")
     elif intent == "three-column":
         put(pick("13") if pick("13") is not None else title_shape, "title")
         put(pick("21", "24", "1"), "column_1")
@@ -502,6 +579,18 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
             if index < len(shapes):
                 mapped[index] = value
 
+    strategic_intents = {
+        "positioning", "service-architecture", "data-flywheel", "experience-space",
+        "decision-grid", "master-storyline", "naming-direction", "stat-grid",
+        "flow", "big-quote",
+    }
+    if intent in strategic_intents and "title" in content and mapped:
+        title_text = str(content["title"])
+        if title_text and not any(title_text in value for value in mapped.values()):
+            first_index = min(mapped)
+            existing = mapped[first_index]
+            mapped[first_index] = f"{title_text}\n{existing}" if existing else title_text
+
     # Runtime validation: warn if expected mappings are missing
     expected_keys = {
         "opening-cover": ["title"],
@@ -512,6 +601,16 @@ def map_content_to_shapes(intent: str, content: dict, shapes: list[ET.Element]) 
         "scenario-detail": ["title", "column_1", "column_2", "column_3"],
         "image-content": ["title", "body"],
         "section-photo": ["title", "body"],
+        "positioning": ["title", "before_text", "after_text"],
+        "service-architecture": ["title", "left_content", "right_content"],
+        "data-flywheel": ["title", "flywheel_steps"],
+        "experience-space": ["title", "column_1", "column_2", "column_3"],
+        "decision-grid": ["title", "decision_items"],
+        "master-storyline": ["title", "headline"],
+        "naming-direction": ["title", "naming_recommendation"],
+        "stat-grid": ["title", "stats"],
+        "flow": ["title", "flow_steps"],
+        "big-quote": ["title", "quote"],
     }
     for key in expected_keys.get(intent, []):
         if key not in content:
@@ -558,12 +657,13 @@ def replace_text_runs(slide_xml: bytes, values: list[str], intent: str = "", con
     shapes = [sp for sp in root.findall(".//p:sp", NS) if sp.findall(".//a:t", NS)]
     mapped = map_content_to_shapes(intent, content or {}, shapes) if content is not None else {}
     if mapped:
+        mapped_shape_ids = {id(shapes[index]) for index in mapped if index < len(shapes)}
         for index, sp in enumerate(shapes):
             ph_type, _ = shape_key(sp)
             if ph_type in TEMPLATE_CHROME_PLACEHOLDER_TYPES:
                 continue
             set_shape_text(sp, mapped.get(index, ""))
-        cleanup_unmapped_sample_content(root, mapped, content or {}, intent)
+        cleanup_unmapped_sample_content(root, mapped, content or {}, intent, mapped_shape_ids)
     else:
         text_nodes = [node for node in root.findall(".//a:t", NS) if node.text and node.text.strip()]
         for node, value in zip(text_nodes, values):
